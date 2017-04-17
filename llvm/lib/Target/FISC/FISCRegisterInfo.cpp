@@ -39,70 +39,70 @@
 
 using namespace llvm;
 
-FISCRegisterInfo::FISCRegisterInfo() : FISCGenRegisterInfo(FISC::LR) {}
+FISCRegisterInfo::FISCRegisterInfo() 
+    : FISCGenRegisterInfo(FISC::LR) {}
 
 const uint16_t * FISCRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
-	static const uint16_t CalleeSavedRegs[] = { 
-		FISC::X19, FISC::X20, FISC::X21,
-		FISC::X22, FISC::X23, FISC::X24,
-		FISC::X25, FISC::X26, FISC::X27, 0
-	};
-	return CalleeSavedRegs;
+    static const uint16_t CalleeSavedRegs[] = { 
+        FISC::X19, FISC::X20, FISC::X21,
+        FISC::X22, FISC::X23, FISC::X24,
+        FISC::X25, FISC::X26, FISC::X27, 0
+    };
+    return CalleeSavedRegs;
 }
 
 BitVector FISCRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
-	BitVector Reserved(getNumRegs());
-
-	Reserved.set(FISC::SP);
-	Reserved.set(FISC::LR);
-	return Reserved;
+    BitVector Reserved(getNumRegs());
+    Reserved.set(FISC::SP);
+    Reserved.set(FISC::LR);
+    return Reserved;
 }
 
 const uint32_t *FISCRegisterInfo::getCallPreservedMask(const MachineFunction &MF, CallingConv::ID) const {
-	return CC_Save_RegMask;
+    return CC_Save_RegMask;
 }
 
 bool FISCRegisterInfo::requiresRegisterScavenging(const MachineFunction &MF) const {
-	return true;
+    return true;
 }
 
 bool FISCRegisterInfo::trackLivenessAfterRegAlloc(const MachineFunction &MF) const {
-	return true;
+    return true;
 }
 
 bool FISCRegisterInfo::useFPForScavengingIndex(const MachineFunction &MF) const {
-	return false;
+    return false;
 }
 
 void FISCRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
-										   int SPAdj, unsigned FIOperandNum,
-										   RegScavenger *RS) const 
+                                           int SPAdj, unsigned FIOperandNum,
+                                           RegScavenger *RS) const 
 {
-	MachineInstr &MI = *II;
-	const MachineFunction &MF = *MI.getParent()->getParent();
-	const MachineFrameInfo *MFI = MF.getFrameInfo();
-	MachineOperand &FIOp = MI.getOperand(FIOperandNum);
-	unsigned FI = FIOp.getIndex();
+    MachineInstr           &MI   = *II;
+    const MachineFunction  &MF   = *MI.getParent()->getParent();
+    const MachineFrameInfo *MFI  = MF.getFrameInfo();
+    MachineOperand         &FIOp = MI.getOperand(FIOperandNum);
+    unsigned                FI   = FIOp.getIndex();
 
-	// Determine if we can eliminate the index from this kind of instruction.
-	unsigned ImmOpIdx = 0;
-	switch (MI.getOpcode()) {
-	default:
-		// Not supported yet.
-		return;
-	case FISC::LDR:
-	case FISC::STR:
-		ImmOpIdx = FIOperandNum + 1;
-		break;
-	}
+    /// Determine if we can eliminate the index from this kind of instruction.
+    unsigned ImmOpIdx = 0;
+    switch (MI.getOpcode()) {
+    default:
+        /// Not supported yet.
+        return;
+    case FISC::LDR:
+    case FISC::STR:
+        ImmOpIdx = FIOperandNum + 1;
+        break;
+    }
 
-	// FIXME: check the size of offset.
-	MachineOperand &ImmOp = MI.getOperand(ImmOpIdx);
-	int Offset = MFI->getObjectOffset(FI) + MFI->getStackSize() + ImmOp.getImm();
-	FIOp.ChangeToRegister(FISC::SP, false);
-	ImmOp.setImm(Offset);
+    // FIXME: check the size of offset.
+    MachineOperand &ImmOp = MI.getOperand(ImmOpIdx);
+    int Offset = MFI->getObjectOffset(FI) + MFI->getStackSize() + ImmOp.getImm();
+    FIOp.ChangeToRegister(FISC::SP, false);
+    ImmOp.setImm(Offset);
 }
 
 unsigned FISCRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
-	return FISC::SP;
+    return FISC::SP;
 }

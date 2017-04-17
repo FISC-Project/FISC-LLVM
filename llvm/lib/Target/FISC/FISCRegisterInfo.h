@@ -42,10 +42,9 @@ public:
 
 	void eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj, unsigned FIOperandNum, RegScavenger *RS = NULL) const override;
 
-	// Debug information queries.
+	/// Debug information queries.
 	unsigned getFrameRegister(const MachineFunction &MF) const override;
 };
-
 } // end namespace llvm
 
 #endif

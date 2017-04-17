@@ -8,7 +8,7 @@
 mkdir build
 xcopy /e /y fisc-installation\registry llvm
 xcopy /e /y fisc-installation\target   llvm
-printf "@cd ""%%%%~dp0""\n@echo off\n\ncd build\n\ncmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug -DLLVM_TARGETS_TO_BUILD=FISC;LEG  -G ""Visual Studio 14 2015 Win64"" ../llvm\n\n@cd ""%%%%~dp0""" > run-make-gen.bat
+printf "@cd ""%%%%~dp0""\n@echo off\n\ncd build\n\ncmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=Debug -DLLVM_TARGETS_TO_BUILD=FISC  -G ""Visual Studio 14 2015 Win64"" ../llvm\n\n@cd ""%%%%~dp0""" > run-make-gen.bat
 @printf "====================================\n"
 
 @printf "\n> Done!"

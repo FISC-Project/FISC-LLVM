@@ -26,11 +26,10 @@ class Function;
 /// FISC target-specific information for each MachineFunction.
 class FISCFunctionInfo : public MachineFunctionInfo {
 public:
-	FISCFunctionInfo() {}
-
+	FISCFunctionInfo()  {}
 	~FISCFunctionInfo() {}
 };
-} // end llvm namespace
+} // end namespace llvm
 
 #endif // FISCMACHINEFUNCTIONINFO_H
 

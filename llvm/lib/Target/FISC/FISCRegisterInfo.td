@@ -12,8 +12,8 @@
 //===----------------------------------------------------------------------===//
 
 class FISCReg<bits<16> Enc, string n> : Register<n> {
-	let HWEncoding = Enc;
-	let Namespace = "FISC";
+    let HWEncoding = Enc;
+    let Namespace = "FISC";
 }
 
 // CPU registers
@@ -52,17 +52,17 @@ def XZR : FISCReg<31, "xzr">;
 
 // Register classes
 def GRRegs : RegisterClass<"FISC", [i64], 64,
-	// Return values and arguments
-	(add
-		// General Purpose Registers:
-		X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15,
-	
-		// Intra-Procedure-Call Scratch Registers:
-		IP0, IP1,
-	
-		// General Purpose Registers:
-		X18, X19, X20, X21, X22, X23, X24, X25, X26, X27,
-	
-		// Special "General Purpose" Registers:
-		SP, FP, LR, XZR
-	)>;
+    // Return values and arguments
+    (add
+        // General Purpose Registers:
+        X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15,
+    
+        // Intra-Procedure-Call Scratch Registers:
+        IP0, IP1,
+    
+        // General Purpose Registers:
+        X18, X19, X20, X21, X22, X23, X24, X25, X26, X27,
+    
+        // Special "General Purpose" Registers:
+        SP, FP, LR, XZR
+    )>;

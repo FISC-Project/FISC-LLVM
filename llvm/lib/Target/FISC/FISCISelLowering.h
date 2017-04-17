@@ -27,14 +27,14 @@ class FISCTargetMachine;
 
 namespace FISCISD {
 enum NodeType {
-	// Start the numbering where the builtin ops and target ops leave off.
-	FIRST_NUMBER = ISD::BUILTIN_OP_END,
-	RET_FLAG,
-	// This loads the symbol (e.g. global address) into a register.
-	LOAD_SYM,
-	// This loads a 64-bit immediate into a register.
-	MOVEi64,
-	CALL
+    /// Start the numbering where the builtin ops and target ops leave off.
+    FIRST_NUMBER = ISD::BUILTIN_OP_END,
+    RET_FLAG,
+    /// This loads the symbol (e.g. global address) into a register.
+    LOAD_SYM,
+    /// This loads a 64-bit immediate into a register.
+    MOVEi64,
+    CALL
 };
 }
 
@@ -43,46 +43,46 @@ enum NodeType {
 //===--------------------------------------------------------------------===//
 class FISCTargetLowering : public TargetLowering {
 public:
-	explicit FISCTargetLowering(FISCTargetMachine &TM);
+    explicit FISCTargetLowering(FISCTargetMachine &TM);
 
-	/// LowerOperation - Provide custom lowering hooks for some operations.
-	virtual SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
+    /// LowerOperation - Provide custom lowering hooks for some operations.
+    virtual SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
 
-	/// getTargetNodeName - This method returns the name of a target specific DAG node.
-	virtual const char *getTargetNodeName(unsigned Opcode) const override;
+    /// getTargetNodeName - This method returns the name of a target specific DAG node.
+    virtual const char *getTargetNodeName(unsigned Opcode) const override;
 
 private:
-	const FISCSubtarget &Subtarget;
+    const FISCSubtarget &Subtarget;
 
-	SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,
-								 bool isVarArg,
-								 const SmallVectorImpl<ISD::InputArg> &Ins,
-								 SDLoc dl, SelectionDAG &DAG,
-								 SmallVectorImpl<SDValue> &InVals) const override;
+    SDValue LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv,
+                                 bool isVarArg,
+                                 const SmallVectorImpl<ISD::InputArg> &Ins,
+                                 SDLoc dl, SelectionDAG &DAG,
+                                 SmallVectorImpl<SDValue> &InVals) const override;
 
-	SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
-					  SmallVectorImpl<SDValue> &InVals) const override;
+    SDValue LowerCall(TargetLowering::CallLoweringInfo &CLI,
+                      SmallVectorImpl<SDValue> &InVals) const override;
 
-	SDValue LowerReturn(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
-						const SmallVectorImpl<ISD::OutputArg> &Outs,
-						const SmallVectorImpl<SDValue> &OutVals, SDLoc dl,
-						SelectionDAG &DAG) const override;
+    SDValue LowerReturn(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
+                        const SmallVectorImpl<ISD::OutputArg> &Outs,
+                        const SmallVectorImpl<SDValue> &OutVals, SDLoc dl,
+                        SelectionDAG &DAG) const override;
 
-	SDValue LowerCallResult(SDValue Chain, SDValue InGlue,
-							CallingConv::ID CallConv, bool isVarArg,
-							const SmallVectorImpl<ISD::InputArg> &Ins, SDLoc dl,
-							SelectionDAG &DAG,
-							SmallVectorImpl<SDValue> &InVals) const;
+    SDValue LowerCallResult(SDValue Chain, SDValue InGlue,
+                            CallingConv::ID CallConv, bool isVarArg,
+                            const SmallVectorImpl<ISD::InputArg> &Ins, SDLoc dl,
+                            SelectionDAG &DAG,
+                            SmallVectorImpl<SDValue> &InVals) const;
 
-	bool CanLowerReturn(CallingConv::ID CallConv, MachineFunction &MF,
-						bool isVarArg,
-						const SmallVectorImpl<ISD::OutputArg> &ArgsFlags,
-						LLVMContext &Context) const override;
+    bool CanLowerReturn(CallingConv::ID CallConv, MachineFunction &MF,
+                        bool isVarArg,
+                        const SmallVectorImpl<ISD::OutputArg> &ArgsFlags,
+                        LLVMContext &Context) const override;
 
-	// LowerGlobalAddress - Emit a constant load to the global address.
-	SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
+    /// LowerGlobalAddress - Emit a constant load to the global address.
+    SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
 };
-}
+} // end namespace llvm
 
 #endif // FISCISELLOWERING_H
 

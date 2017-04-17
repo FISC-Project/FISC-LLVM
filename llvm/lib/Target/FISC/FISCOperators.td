@@ -11,20 +11,20 @@
 // Type profiles
 //===----------------------------------------------------------------------===//
 
-def MoveImm64Ty : SDTypeProfile<1, 1, [SDTCisSameAs<0, 1>, SDTCisInt<0>]>;
+def MoveImm64Ty          : SDTypeProfile<1, 1, [SDTCisSameAs<0, 1>, SDTCisInt<0>]>;
 
 def SDT_FISCCallSeqStart : SDCallSeqStart<[ SDTCisVT<0, i64> ]>;
 
 def SDT_FISCCallSeqEnd   : SDCallSeqEnd<[SDTCisVT<0, i64>, SDTCisVT<1, i64>]>;
 
-def FISCRetFlag   : SDNode<"FISCISD::RET_FLAG", SDTNone,
-						   [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
-def callseq_start : SDNode<"ISD::CALLSEQ_START", SDT_FISCCallSeqStart,
-						   [SDNPHasChain, SDNPOutGlue]>;
-def callseq_end   : SDNode<"ISD::CALLSEQ_END",   SDT_FISCCallSeqEnd,
-						   [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
+def FISCRetFlag          : SDNode<"FISCISD::RET_FLAG", SDTNone,
+                           [SDNPHasChain, SDNPOptInGlue, SDNPVariadic]>;
+def callseq_start        : SDNode<"ISD::CALLSEQ_START", SDT_FISCCallSeqStart,
+                           [SDNPHasChain, SDNPOutGlue]>;
+def callseq_end          : SDNode<"ISD::CALLSEQ_END",   SDT_FISCCallSeqEnd,
+                           [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
 
-def SDT_FISCCall  : SDTypeProfile<0, -1, [SDTCisPtrTy<0>]>;
+def SDT_FISCCall         : SDTypeProfile<0, -1, [SDTCisPtrTy<0>]>;
 
 //===----------------------------------------------------------------------===//
 // Custom SDNodes.
@@ -40,51 +40,51 @@ def fisc_call : SDNode<"FISCISD::CALL", SDT_FISCCall, [SDNPHasChain, SDNPOptInGl
 // Operand Definitions.
 //===----------------------------------------------------------------------===//
 
-def b_target  : Operand<OtherVT>;
+def b_target : Operand<OtherVT>;
 
 def cc_val : Operand<i64> {
-	let PrintMethod = "printCondCode";
+    let PrintMethod = "printCondCode";
 }
 
 def memsrc : Operand<i64> {
-	let MIOperandInfo = (ops GRRegs, i64imm);
-	let PrintMethod   = "printAddrModeMemSrc";
-	let EncoderMethod = "getMemSrcValue";
+    let MIOperandInfo = (ops GRRegs, i64imm);
+    let PrintMethod   = "printAddrModeMemSrc";
+    let EncoderMethod = "getMemSrcValue";
 }
 
 def FISCimm26 : Operand<i64>, ImmLeaf<i64, [{
-	// BR Address
-	return Imm >= 0 && Imm < 67108864;
+    // BR Address
+    return Imm >= 0 && Imm < 67108864;
 }]>;
 
 def FISCimm19 : Operand<i64>, ImmLeaf<i64, [{
-	// COND BR Address (CB)
-	return Imm >= 0 && Imm < 524288;
+    // COND BR Address (CB)
+    return Imm >= 0 && Imm < 524288;
 }]>;
 
 def FISCimm16 : Operand<i64>, ImmLeaf<i64, [{
-	// MOV Immediate (IW)
-	return Imm >= 0 && Imm < 65536;
+    // MOV Immediate (IW)
+    return Imm >= 0 && Imm < 65536;
 }]>;
 
 def FISCimm12 : Operand<i64>, ImmLeaf<i64, [{
-	// ALU Immediate (I)
-	return Imm >= 0 && Imm < 4096;
+    // ALU Immediate (I)
+    return Imm >= 0 && Imm < 4096;
 }]>;
 
 def FISCimm9 : Operand<i64>, ImmLeaf<i64, [{
-	// DT Address (D)
-	return Imm >= 0 && Imm < 512;
+    // DT Address (D)
+    return Imm >= 0 && Imm < 512;
 }]>;
 
 def FISCimm6 : Operand<i64>, ImmLeaf<i64, [{
-	// shamt (R)
-	return Imm >= 0 && Imm < 64;
+    // shamt (R)
+    return Imm >= 0 && Imm < 64;
 }]>;
 
 def FISCimm2 : Operand<i64>, ImmLeaf<i64, [{
-	// MOVZ/K Quadrant (IW) / Op (D)
-	return Imm >= 0 && Imm < 4;
+    // MOVZ/K Quadrant (IW) / Op (D)
+    return Imm >= 0 && Imm < 4;
 }]>;
 
 //===----------------------------------------------------------------------===//

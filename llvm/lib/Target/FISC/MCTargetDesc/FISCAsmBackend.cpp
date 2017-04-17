@@ -33,144 +33,144 @@ using namespace llvm;
 namespace {
 class FISCELFObjectWriter : public MCELFObjectTargetWriter {
 public:
-  FISCELFObjectWriter(uint8_t OSABI)
-	  : MCELFObjectTargetWriter(/*Is64Bit*/ false, OSABI, /*ELF::EM_FISC*/ ELF::EM_ARM,
-								/*HasRelocationAddend*/ false) {}
+    FISCELFObjectWriter(uint8_t OSABI)
+      : MCELFObjectTargetWriter(/*Is64Bit*/ false, OSABI, ELF::EM_FISC, /*HasRelocationAddend*/ false) {}
 };
 
 class FISCAsmBackend : public MCAsmBackend {
 public:
-	FISCAsmBackend(const Target &T, const StringRef TT) : MCAsmBackend() {}
+    FISCAsmBackend(const Target &T, const StringRef TT) : MCAsmBackend() {}
 
-	~FISCAsmBackend() {}
+    ~FISCAsmBackend() {}
 
-	unsigned getNumFixupKinds() const override {
-		return FISC::NumTargetFixupKinds;
-	}
+    unsigned getNumFixupKinds() const override {
+        return FISC::NumTargetFixupKinds;
+    }
 
-	const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override {
-		const static MCFixupKindInfo Infos[FISC::NumTargetFixupKinds] = {
-			// This table *must* be in the order that the fixup_* kinds are defined in
-			// FISCFixupKinds.h.
-			//
-			// Name                      Offset (bits) Size (bits)     Flags
-			{ "fixup_FISC_mov_hi16_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
-			{ "fixup_FISC_mov_lo16_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
-		};
+    const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const override {
+        const static MCFixupKindInfo Infos[FISC::NumTargetFixupKinds] = {
+            /// This table *must* be in the order that the fixup_* kinds are defined in
+            /// FISCFixupKinds.h.
+            ///
+            /// Name                      Offset (bits) Size (bits)     Flags
+            { "fixup_FISC_mov_hi16_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
+            { "fixup_FISC_mov_lo16_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
+        };
 
-		if (Kind < FirstTargetFixupKind)
-			return MCAsmBackend::getFixupKindInfo(Kind);
+        if (Kind < FirstTargetFixupKind)
+            return MCAsmBackend::getFixupKindInfo(Kind);
 
-		assert(unsigned(Kind - FirstTargetFixupKind) < getNumFixupKinds() && "Invalid kind!");
-		return Infos[Kind - FirstTargetFixupKind];
-	}
+        assert(unsigned(Kind - FirstTargetFixupKind) < getNumFixupKinds() && "Invalid kind!");
+        return Infos[Kind - FirstTargetFixupKind];
+    }
 
-	/// processFixupValue - Target hook to process the literal value of a fixup
-	/// if necessary.
-	void processFixupValue(const MCAssembler &Asm, const MCAsmLayout &Layout,
-						   const MCFixup &Fixup, const MCFragment *DF,
-						   const MCValue &Target, uint64_t &Value,
-						   bool &IsResolved) override;
+    /// processFixupValue - Target hook to process the literal value of a fixup if necessary.
+    void processFixupValue(const MCAssembler &Asm, const MCAsmLayout &Layout,
+                           const MCFixup &Fixup, const MCFragment *DF,
+                           const MCValue &Target, uint64_t &Value,
+                           bool &IsResolved) override;
 
-	void applyFixup(const MCFixup &Fixup, char *Data, unsigned DataSize,
-					uint64_t Value, bool IsPCRel) const override;
+    void applyFixup(const MCFixup &Fixup, char *Data, unsigned DataSize, uint64_t Value, bool IsPCRel) const override;
 
-	bool mayNeedRelaxation(const MCInst &Inst) const override { 
-		return false; 
-	}
+    bool mayNeedRelaxation(const MCInst &Inst) const override { 
+        return false; 
+    }
 
-	bool fixupNeedsRelaxation(const MCFixup &Fixup, uint64_t Value,
-							  const MCRelaxableFragment *DF,
-							  const MCAsmLayout &Layout) const override 
-	{
-		return false;
-	}
+    bool fixupNeedsRelaxation(const MCFixup &Fixup, uint64_t Value,
+                              const MCRelaxableFragment *DF,
+                              const MCAsmLayout &Layout) const override 
+    {
+        return false;
+    }
 
-	void relaxInstruction(const MCInst &Inst, MCInst &Res) const override {}
+    void relaxInstruction(const MCInst &Inst, MCInst &Res) const override 
+    {
+        // Do nothing
+    }
 
-	bool writeNopData(uint64_t Count, MCObjectWriter *OW) const override {
-		if (Count == 0)
-			return true;
-		return false;
-	}
+    bool writeNopData(uint64_t Count, MCObjectWriter *OW) const override {
+        if (Count == 0)
+            return true;
+        return false;
+    }
 
-	unsigned getPointerSize() const { 
-		return 8; 
-	}
+    unsigned getPointerSize() const { 
+        return 8; 
+    }
 };
-} // end anonymous namespace
+} // end of anonymous namespace
 
 static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value, MCContext *Ctx = NULL) {
-	unsigned Kind = Fixup.getKind();
-	switch (Kind) {
-	default:
-		llvm_unreachable("Unknown fixup kind!");
-	case FISC::fixup_FISC_mov_hi16_pcrel:
-		Value >>= 16;
-		// Intentional fall-through
-	case FISC::fixup_FISC_mov_lo16_pcrel:
-		unsigned Hi4  = (Value & 0xF000) >> 12;
-		unsigned Lo12 = Value & 0x0FFF;
-		// inst{19-16} = Hi4;
-		// inst{11-0} = Lo12;
-		Value = (Hi4 << 16) | (Lo12);
-		return Value;
-	}
-	return Value;
+    unsigned Kind = Fixup.getKind();
+    switch (Kind) {
+    default:
+        llvm_unreachable("Unknown fixup kind!");
+    case FISC::fixup_FISC_mov_hi16_pcrel:
+        Value >>= 16;
+        // Intentional fall-through
+    case FISC::fixup_FISC_mov_lo16_pcrel:
+        unsigned Hi4  = (Value & 0xF000) >> 12;
+        unsigned Lo12 = Value & 0x0FFF;
+        // inst{19-16} = Hi4;
+        // inst{11-0} = Lo12;
+        Value = (Hi4 << 16) | (Lo12);
+        return Value;
+    }
+    return Value;
 }
 
 void FISCAsmBackend::processFixupValue(const MCAssembler &Asm,
-									   const MCAsmLayout &Layout,
-									   const MCFixup &Fixup,
-									   const MCFragment *DF,
-									   const MCValue &Target, uint64_t &Value,
-									   bool &IsResolved) 
+                                       const MCAsmLayout &Layout,
+                                       const MCFixup &Fixup,
+                                       const MCFragment *DF,
+                                       const MCValue &Target, uint64_t &Value,
+                                       bool &IsResolved) 
 {
-	// We always have resolved fixups for now.
-	IsResolved = true;
-	// At this point we'll ignore the value returned by adjustFixupValue as
-	// we are only checking if the fixup can be applied correctly.
-	(void)adjustFixupValue(Fixup, Value, &Asm.getContext());
+    /// We always have resolved fixups for now.
+    IsResolved = true;
+
+    /// At this point we'll ignore the value returned by adjustFixupValue as
+    /// we are only checking if the fixup can be applied correctly.
+    (void)adjustFixupValue(Fixup, Value, &Asm.getContext());
 }
 
 void FISCAsmBackend::applyFixup(const MCFixup &Fixup, char *Data,
-							    unsigned DataSize, uint64_t Value,
-							    bool isPCRel) const 
+                                unsigned DataSize, uint64_t Value,
+                                bool isPCRel) const 
 {
-	unsigned NumBytes = 8;
-	Value = adjustFixupValue(Fixup, Value);
-	if (!Value)
-		return; // Doesn't change encoding.
+    unsigned NumBytes = 8;
+    Value = adjustFixupValue(Fixup, Value);
+    if (!Value)
+        return; /// Doesn't change encoding.
 
-	unsigned Offset = Fixup.getOffset();
-	assert(Offset + NumBytes <= DataSize && "Invalid fixup offset!");
+    unsigned Offset = Fixup.getOffset();
+    assert(Offset + NumBytes <= DataSize && "Invalid fixup offset!");
 
-	// For each byte of the fragment that the fixup touches, mask in the bits from
-	// the fixup value. The Value has been "split up" into the appropriate
-	// bitfields above.
-	for (unsigned i = 0; i != NumBytes; ++i)
-		Data[Offset + i] |= uint8_t((Value >> (i * 8)) & 0xff);
+    /// For each byte of the fragment that the fixup touches, mask in the bits from
+    /// the fixup value. The Value has been "split up" into the appropriate
+    /// bitfields above.
+    for (unsigned i = 0; i != NumBytes; ++i)
+        Data[Offset + i] |= uint8_t((Value >> (i * 8)) & 0xff);
 }
 
 namespace {
-
 class ELFFISCAsmBackend : public FISCAsmBackend {
 public:
-	uint8_t OSABI;
-	ELFFISCAsmBackend(const Target &T, const StringRef TT, uint8_t _OSABI)
-		: FISCAsmBackend(T, TT), OSABI(_OSABI) {}
+    uint8_t OSABI;
+    ELFFISCAsmBackend(const Target &T, const StringRef TT, uint8_t _OSABI)
+        : FISCAsmBackend(T, TT), OSABI(_OSABI) {}
 
-	MCObjectWriter *createObjectWriter(raw_pwrite_stream &OS) const override {
-		return createFISCELFObjectWriter(OS, OSABI);
-	}
+    MCObjectWriter *createObjectWriter(raw_pwrite_stream &OS) const override {
+        return createFISCELFObjectWriter(OS, OSABI);
+    }
 };
 
-} // end anonymous namespace
+} // end of anonymous namespace
 
 MCAsmBackend *llvm::createFISCAsmBackend(const Target &T,
-										 const MCRegisterInfo &MRI,
-										 const Triple &TT, StringRef CPU) 
+                                         const MCRegisterInfo &MRI,
+                                         const Triple &TT, StringRef CPU) 
 {
-	const uint8_t ABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
-	return new ELFFISCAsmBackend(T, TT.getTriple(), ABI);
+    const uint8_t ABI = MCELFObjectTargetWriter::getOSABI(TT.getOS());
+    return new ELFFISCAsmBackend(T, TT.getTriple(), ABI);
 }

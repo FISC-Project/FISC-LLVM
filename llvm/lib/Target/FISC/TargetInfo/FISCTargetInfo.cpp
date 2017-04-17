@@ -16,5 +16,5 @@ using namespace llvm;
 Target llvm::TheFISCTarget;
 
 extern "C" void LLVMInitializeFISCTargetInfo() {
-	RegisterTarget<Triple::fisc> X(TheFISCTarget, "fisc", "FISC");
+    RegisterTarget<Triple::fisc> X(TheFISCTarget, "fisc", "FISC");
 }

@@ -13,17 +13,18 @@
 #include "llvm/MC/MCFixup.h"
 
 namespace llvm {
-namespace FISC {
-	enum Fixups {
-		fixup_FISC_mov_hi16_pcrel = FirstTargetFixupKind,
-		fixup_FISC_mov_lo16_pcrel,
 
-		// Marker
-		LastTargetFixupKind,
-		NumTargetFixupKinds = LastTargetFixupKind - FirstTargetFixupKind
-	};
+namespace FISC {
+    enum Fixups {
+        fixup_FISC_mov_hi16_pcrel = FirstTargetFixupKind,
+        fixup_FISC_mov_lo16_pcrel,
+
+        /// Marker
+        LastTargetFixupKind,
+        NumTargetFixupKinds = LastTargetFixupKind - FirstTargetFixupKind
+    };
 }
-}
+} // end namespace llvm
 
 #endif
 

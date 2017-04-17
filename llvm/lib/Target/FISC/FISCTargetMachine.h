@@ -26,30 +26,29 @@
 namespace llvm {
 
 class FISCTargetMachine : public LLVMTargetMachine {
-	FISCSubtarget Subtarget;
-	std::unique_ptr<TargetLoweringObjectFile> TLOF;
+    FISCSubtarget Subtarget;
+    std::unique_ptr<TargetLoweringObjectFile> TLOF;
 
 public:
-	FISCTargetMachine(const Target &T, const Triple &TT, StringRef CPU,
-					  StringRef FS, const TargetOptions &Options, Reloc::Model RM,
-					  CodeModel::Model CM, CodeGenOpt::Level OL);
+    FISCTargetMachine(const Target &T, const Triple &TT, StringRef CPU,
+                      StringRef FS, const TargetOptions &Options, Reloc::Model RM,
+                      CodeModel::Model CM, CodeGenOpt::Level OL);
   
-	const FISCSubtarget * getSubtargetImpl() const {
-		return &Subtarget;
-	}
+    const FISCSubtarget * getSubtargetImpl() const {
+        return &Subtarget;
+    }
   
-	virtual const TargetSubtargetInfo * getSubtargetImpl(const Function &) const override {
-		return &Subtarget;
-	}
+    virtual const TargetSubtargetInfo * getSubtargetImpl(const Function &) const override {
+        return &Subtarget;
+    }
 
-	// Pass Pipeline Configuration
-	virtual TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
+    /// Pass Pipeline Configuration
+    virtual TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
   
-	TargetLoweringObjectFile *getObjFileLowering() const override {
-		return TLOF.get();
-	}
+    TargetLoweringObjectFile *getObjFileLowering() const override {
+        return TLOF.get();
+    }
 };
-
 } // end namespace llvm
 
 #endif

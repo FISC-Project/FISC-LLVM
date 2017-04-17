@@ -19,10 +19,11 @@
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
-	class TargetMachine;
-	class FISCTargetMachine;
 
-	FunctionPass *createFISCISelDag(FISCTargetMachine &TM, CodeGenOpt::Level OptLevel);
-} // end namespace llvm;
+class TargetMachine;
+class FISCTargetMachine;
+
+FunctionPass *createFISCISelDag(FISCTargetMachine &TM, CodeGenOpt::Level OptLevel);
+} // end namespace llvm
 
 #endif

@@ -17,16 +17,17 @@
 #include "llvm/MC/MCAsmInfoELF.h"
 
 namespace llvm {
-	class StringRef;
-	class Target;
-	class Triple;
 
-	class FISCMCAsmInfo : public MCAsmInfoELF {
-		virtual void anchor();
+class StringRef;
+class Target;
+class Triple;
 
-	public:
-		explicit FISCMCAsmInfo(const Triple &TT);
-	};
-} // namespace llvm
+class FISCMCAsmInfo : public MCAsmInfoELF {
+    virtual void anchor();
+
+public:
+    explicit FISCMCAsmInfo(const Triple &TT);
+};
+} // end namespace llvm
 
 #endif

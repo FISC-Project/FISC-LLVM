@@ -32,7 +32,7 @@ def FISCInstrInfo : InstrInfo;
 //===----------------------------------------------------------------------===//
 
 class Proc<string Name, list<SubtargetFeature> Features>
-	: Processor<Name, NoItineraries, Features>;
+    : Processor<Name, NoItineraries, Features>;
 
 def : Proc<"generic", []>;
 
@@ -41,5 +41,5 @@ def : Proc<"generic", []>;
 //===----------------------------------------------------------------------===//
 
 def FISC : Target {
-	let InstructionSet = FISCInstrInfo;
+    let InstructionSet = FISCInstrInfo;
 }

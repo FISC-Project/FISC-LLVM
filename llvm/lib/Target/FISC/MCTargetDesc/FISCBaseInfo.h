@@ -26,33 +26,32 @@ namespace llvm {
 /// instruction info tracks.
 namespace FISCII {
 
-	/// Target Operand Flag enum.
-	enum TOF {
-		//===------------------------------------------------------------------===//
-		// FISC-Specific MachineOperand flags.
+    /// Target Operand Flag enum.
+    enum TOF {
+        //===------------------------------------------------------------------===//
+        // FISC-Specific MachineOperand flags.
+        //===------------------------------------------------------------------===//
+        MO_NO_FLAG = 0,
 
-		MO_NO_FLAG = 0,
+        /// MO_LO16 - On a symbol operand, this represents a relocation containing
+        /// lower 16 bit of the address. Used only via movw instruction.
+        MO_LO16 = 0x1,
 
-		/// MO_LO16 - On a symbol operand, this represents a relocation containing
-		/// lower 16 bit of the address. Used only via movw instruction.
-		MO_LO16 = 0x1,
+        /// MO_HI16 - On a symbol operand, this represents a relocation containing
+        /// higher 16 bit of the address. Used only via movt instruction.
+        MO_HI16 = 0x2,
 
-		/// MO_HI16 - On a symbol operand, this represents a relocation containing
-		/// higher 16 bit of the address. Used only via movt instruction.
-		MO_HI16 = 0x2,
+        /// MO_OPTION_MASK - Most flags are mutually exclusive; this mask selects
+        /// just that part of the flag set.
+        MO_OPTION_MASK = 0x7f,
 
-		/// MO_OPTION_MASK - Most flags are mutually exclusive; this mask selects
-		/// just that part of the flag set.
-		MO_OPTION_MASK = 0x7f,
-
-		// It's undefined behaviour if an enum overflows the range between its
-		// smallest and largest values, but since these are |ed together, it can
-		// happen. Put a sentinel in (values of this enum are stored as "unsigned
-		// char").
-		MO_UNUSED_MAXIMUM = 0xff
-	};
+        /// It's undefined behaviour if an enum overflows the range between its
+        /// smallest and largest values, but since these are |ed together, it can
+        /// happen. Put a sentinel in (values of this enum are stored as "unsigned
+        /// char").
+        MO_UNUSED_MAXIMUM = 0xff
+    };
 } // end namespace FISCII
-
-} // end namespace llvm;
+} // end namespace llvm
 
 #endif
