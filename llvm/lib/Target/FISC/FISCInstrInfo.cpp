@@ -202,27 +202,38 @@ bool FISCInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
             MachineBasicBlock &MBB = *MI->getParent();
 
             const unsigned DstReg = MI->getOperand(0).getReg();
-            //TODO const MachineOperand & QuadrantImm = MI->getOperand(2);
+            //FIXME const MachineOperand & QuadrantImm = MI->getOperand(2);
             const bool DstIsDead  = MI->getOperand(0).isDead();
 
             const MachineOperand &MO = MI->getOperand(1);
 
             auto Q1 = BuildMI(MBB, MI, DL, get(FISC::MOVZ), DstReg);
+
             auto Q2 = BuildMI(MBB, MI, DL, get(FISC::MOVK))
                             .addReg(DstReg, RegState::Define | getDeadRegState(DstIsDead))
                             .addReg(DstReg);
 
+            auto Q3 = BuildMI(MBB, MI, DL, get(FISC::MOVK))
+                .addReg(DstReg, RegState::Define | getDeadRegState(DstIsDead))
+                .addReg(DstReg);
+            
+            auto Q4 = BuildMI(MBB, MI, DL, get(FISC::MOVK))
+                .addReg(DstReg, RegState::Define | getDeadRegState(DstIsDead))
+                .addReg(DstReg);
+
             if (MO.isImm()) {
-                const unsigned Imm = MO.getImm();
-                const unsigned Lo16 = Imm & 0xffff;
-                const unsigned Hi16 = (Imm >> 16) & 0xffff;
-                Q1 = Q1.addImm(Lo16);
-                Q2 = Q2.addImm(Hi16);
+                const uint64_t Imm = MO.getImm();
+                Q1 = Q1.addImm(Imm & 0xffff);
+                Q2 = Q2.addImm((Imm >> 16) & 0xffff);
+                Q3 = Q3.addImm((Imm >> 32) & 0xffff);
+                Q4 = Q4.addImm((Imm >> 48) & 0xffff);
             } else {
                 const GlobalValue *GV = MO.getGlobal();
                 const unsigned TF = MO.getTargetFlags();
-                Q1 = Q1.addGlobalAddress(GV, MO.getOffset(), TF | FISCII::MO_LO16);
-                Q2 = Q2.addGlobalAddress(GV, MO.getOffset(), TF | FISCII::MO_HI16);
+                Q1 = Q1.addGlobalAddress(GV, MO.getOffset(), TF | FISCII::MO_Q1);
+                Q2 = Q2.addGlobalAddress(GV, MO.getOffset(), TF | FISCII::MO_Q2);
+                Q3 = Q3.addGlobalAddress(GV, MO.getOffset(), TF | FISCII::MO_Q3);
+                Q4 = Q4.addGlobalAddress(GV, MO.getOffset(), TF | FISCII::MO_Q4);
             }
 
             MBB.erase(MI);

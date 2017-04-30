@@ -7563,19 +7563,18 @@ namespace {
 class FISCTargetInfo : public TargetInfo {
 public:
   FISCTargetInfo(const llvm::Triple &Triple) : TargetInfo(Triple) {
-    BigEndian = false;
+    BigEndian     = true;
     NoAsmVariants = true;
     LongLongAlign = 64;
-    SuitableAlign = 32;
-    DoubleAlign = LongDoubleAlign = 64;
-    SizeType = UnsignedInt;
-    PtrDiffType = SignedInt;
-    IntPtrType = SignedInt;
-    WCharType = UnsignedChar;
-    WIntType = UnsignedInt;
+    SuitableAlign = 64;
+    DoubleAlign   = LongDoubleAlign = 64;
+    SizeType      = UnsignedInt;
+    PtrDiffType   = SignedInt;
+    IntPtrType    = SignedInt;
+    WCharType     = UnsignedChar;
+    WIntType      = UnsignedInt;
     UseZeroLengthBitfieldAlignment = true;
-    DataLayoutString = "e-m:e-p:32:32-i1:8:32-i8:8:32-i16:16:32-i64:32"
-                       "-f64:32-a:0:32-n32";
+    DataLayoutString = "E-p:64:64-i1:8:64-i8:8:64-i16:16:64-i32:32:64-f64:64-a:0:64-n64";
   }
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override { }

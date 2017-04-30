@@ -16,8 +16,11 @@ namespace llvm {
 
 namespace FISC {
     enum Fixups {
-        fixup_FISC_mov_hi16_pcrel = FirstTargetFixupKind,
-        fixup_FISC_mov_lo16_pcrel,
+        fixup_fisc_mov_q1_pcrel = FirstTargetFixupKind,
+        fixup_fisc_mov_q2_pcrel,
+        fixup_fisc_mov_q3_pcrel,
+        fixup_fisc_mov_q4_pcrel,
+        fixup_fisc_call26_pcrel,
 
         /// Marker
         LastTargetFixupKind,

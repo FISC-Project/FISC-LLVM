@@ -40,11 +40,20 @@ unsigned FISCELFObjectWriter::GetRelocType(const MCValue &Target, const MCFixup 
     switch ((unsigned)Fixup.getKind()) {
     default:
         llvm_unreachable("Unimplemented");
-    case FISC::fixup_FISC_mov_hi16_pcrel:
-        Type = ELF::R_ARM_MOVT_PREL;
+    case FISC::fixup_fisc_mov_q1_pcrel:
+        Type = ELF::R_FISC_MOV_Q1;
         break;
-    case FISC::fixup_FISC_mov_lo16_pcrel:
-        Type = ELF::R_ARM_MOVW_PREL_NC;
+    case FISC::fixup_fisc_mov_q2_pcrel:
+        Type = ELF::R_FISC_MOV_Q2;
+        break;
+    case FISC::fixup_fisc_mov_q3_pcrel:
+        Type = ELF::R_FISC_MOV_Q3;
+        break;
+    case FISC::fixup_fisc_mov_q4_pcrel:
+        Type = ELF::R_FISC_MOV_Q4;
+        break;
+    case FISC::fixup_fisc_call26_pcrel:
+        Type = ELF::R_FISC_CALL26;
         break;
     }
     return Type;

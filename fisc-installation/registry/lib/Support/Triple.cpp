@@ -1293,7 +1293,6 @@ Triple Triple::getBigEndianArchVariant() const {
   case Triple::hsail:
   case Triple::kalimba:
   case Triple::leg:
-  case Triple::fisc:
   case Triple::le32:
   case Triple::le64:
   case Triple::msp430:
@@ -1328,6 +1327,7 @@ Triple Triple::getBigEndianArchVariant() const {
   case Triple::systemz:
   case Triple::tce:
   case Triple::thumbeb:
+  case Triple::fisc:
     // Already big endian.
     break;
 
@@ -1349,6 +1349,7 @@ Triple Triple::getLittleEndianArchVariant() const {
   case Triple::sparcv9:
   case Triple::systemz:
   case Triple::tce:
+  case Triple::fisc:
 
   // ARM is intentionally unsupported here, changing the architecture would
   // drop any arch suffixes.
@@ -1368,7 +1369,6 @@ Triple Triple::getLittleEndianArchVariant() const {
   case Triple::hsail64:
   case Triple::hsail:
   case Triple::leg:
-  case Triple::fisc:
   case Triple::kalimba:
   case Triple::le32:
   case Triple::le64:

@@ -281,13 +281,11 @@ public:
 	VK_LEG_LO,
 	VK_LEG_HI,
 
-	VK_FISC_LO,
-	VK_FISC_HI,
-
 	VK_FISC_Q1,
 	VK_FISC_Q2,
 	VK_FISC_Q3,
 	VK_FISC_Q4,
+	VK_FISC_CALL26,
 
 	VK_COFF_IMGREL32, // symbol@imgrel (image-relative)
 

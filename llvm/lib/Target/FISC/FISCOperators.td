@@ -24,7 +24,7 @@ def callseq_start        : SDNode<"ISD::CALLSEQ_START", SDT_FISCCallSeqStart,
 def callseq_end          : SDNode<"ISD::CALLSEQ_END",   SDT_FISCCallSeqEnd,
                            [SDNPHasChain, SDNPOptInGlue, SDNPOutGlue]>;
 
-def SDT_FISCCall         : SDTypeProfile<0, -1, [SDTCisPtrTy<0>]>;
+def SDT_FISCCall         : SDTypeProfile<0, -1, [SDTCisVT<0, iPTR>]>;
 
 //===----------------------------------------------------------------------===//
 // Custom SDNodes.
@@ -39,18 +39,6 @@ def fisc_call : SDNode<"FISCISD::CALL", SDT_FISCCall, [SDNPHasChain, SDNPOptInGl
 //===----------------------------------------------------------------------===//
 // Operand Definitions.
 //===----------------------------------------------------------------------===//
-
-def b_target : Operand<OtherVT>;
-
-def cc_val : Operand<i64> {
-    let PrintMethod = "printCondCode";
-}
-
-def memsrc : Operand<i64> {
-    let MIOperandInfo = (ops GRRegs, i64imm);
-    let PrintMethod   = "printAddrModeMemSrc";
-    let EncoderMethod = "getMemSrcValue";
-}
 
 def FISCimm26 : Operand<i64>, ImmLeaf<i64, [{
     // BR Address
@@ -87,8 +75,22 @@ def FISCimm2 : Operand<i64>, ImmLeaf<i64, [{
     return Imm >= 0 && Imm < 4;
 }]>;
 
+def calltarget : Operand<i64>;
+
+def b_target : Operand<OtherVT>;
+
+def cc_val : Operand<i64> {
+    let PrintMethod = "printCondCode";
+}
+
+def memsrc : Operand<i64> {
+    let MIOperandInfo = (ops GRRegs, i64imm);
+    let PrintMethod   = "printAddrModeMemSrc";
+    let EncoderMethod = "getMemSrcValue";
+}
+
 //===----------------------------------------------------------------------===//
 // Complex Pattern Definitions.
 //===----------------------------------------------------------------------===//
 
-def addr : ComplexPattern<i64, 2, "SelectAddr", [], []>;
+def addr : ComplexPattern<iPTR, 2, "SelectAddr", [], []>;

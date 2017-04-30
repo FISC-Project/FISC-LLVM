@@ -16,6 +16,7 @@
 #include "FISCMachineFunctionInfo.h"
 #include "FISCSubtarget.h"
 #include "FISCTargetMachine.h"
+#include "MCTargetDesc/FISCBaseInfo.h"
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
@@ -64,8 +65,6 @@ FISCTargetLowering::FISCTargetLowering(FISCTargetMachine &FISCTM)
 
     /// Nodes that require custom lowering
     setOperationAction(ISD::GlobalAddress, MVT::i64, Custom);
-
-    //setTruncStoreAction(MVT::i64, MVT::i32, Expand);
 }
 
 SDValue FISCTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
@@ -80,9 +79,8 @@ SDValue FISCTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const 
 SDValue FISCTargetLowering::LowerGlobalAddress(SDValue Op, SelectionDAG& DAG) const {
     EVT VT = Op.getValueType();
     GlobalAddressSDNode *GlobalAddr = cast<GlobalAddressSDNode>(Op.getNode());
-    SDValue TargetAddr =
-        DAG.getTargetGlobalAddress(GlobalAddr->getGlobal(), Op, MVT::i64);
-    return DAG.getNode(FISCISD::LOAD_SYM, Op, VT, TargetAddr);
+    SDValue TargetAddr = DAG.getTargetGlobalAddress(GlobalAddr->getGlobal(), Op, MVT::i64, 0, FISCII::MO_CALL26);
+    return TargetAddr;
 }
 
 //===----------------------------------------------------------------------===//
@@ -140,8 +138,7 @@ SDValue FISCTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
             continue;
         }
 
-        assert(VA.isMemLoc() &&
-                "Only support passing arguments through registers or via the stack");
+        assert(VA.isMemLoc() && "Only support passing arguments through registers or via the stack");
 
         SDValue StackPtr = DAG.getRegister(FISC::SP, MVT::i64);
         SDValue PtrOff   = DAG.getIntPtrConstant(VA.getLocMemOffset(), Loc);
@@ -259,8 +256,7 @@ SDValue FISCTargetLowering::LowerFormalArguments(
             continue;
         }
 
-        assert(VA.isMemLoc() &&
-                "Can only pass arguments as either registers or via the stack");
+        assert(VA.isMemLoc() && "Can only pass arguments as either registers or via the stack");
 
         const unsigned Offset = VA.getLocMemOffset();
 
@@ -268,8 +264,7 @@ SDValue FISCTargetLowering::LowerFormalArguments(
         EVT PtrTy = getPointerTy(DAG.getDataLayout());
         SDValue FIPtr = DAG.getFrameIndex(FI, PtrTy);
 
-        assert(VA.getValVT() == MVT::i64 &&
-                "Only support passing arguments as i64");
+        assert(VA.getValVT() == MVT::i64 && "Only support passing arguments as i64");
 
         SDValue Load = DAG.getLoad(VA.getValVT(), dl, Chain, FIPtr, MachinePointerInfo(), false, false, false, 0);
         InVals.push_back(Load);

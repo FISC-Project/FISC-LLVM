@@ -13,27 +13,27 @@
 // FISC Return Value Calling Convention
 //===----------------------------------------------------------------------===//
 def RetCC_FISC : CallingConv<[
-  // i32 are returned in registers R0, R1, R2, R3
-  CCIfType<[i32], CCAssignToReg<[R0, R1, R2, R3]>>,
+    // i64 are returned in registers X0, X1 .. X7
+    CCIfType<[i64], CCAssignToReg<[X0, X1, X2, X3, X4, X5, X6, X7]>>,
 
-  // Integer values get stored in stack slots that are 4 bytes in
-  // size and 4-byte aligned.
-  CCIfType<[i32], CCAssignToStack<4, 4>>
+    // Integer values get stored in stack slots that are 8 bytes in
+    // size and 8-byte aligned.
+    CCIfType<[i64], CCAssignToStack<8, 8>>
 ]>;
 
 //===----------------------------------------------------------------------===//
 // FISC Argument Calling Conventions
 //===----------------------------------------------------------------------===//
 def CC_FISC : CallingConv<[
-  // Promote i8/i16 arguments to i32.
-  CCIfType<[i8, i16], CCPromoteToType<i32>>,
+    // Promote i8/i16/i32 arguments to i64.
+    CCIfType<[i8, i16, i32], CCPromoteToType<i64>>,
 
-  // The first 4 integer arguments are passed in integer registers.
-  CCIfType<[i32], CCAssignToReg<[R0, R1, R2, R3]>>,
+    // The first 8 integer arguments are passed in integer registers.
+    CCIfType<[i64], CCAssignToReg<[X0, X1, X2, X3, X4, X5, X6, X7]>>,
 
-  // Integer values get stored in stack slots that are 4 bytes in
-  // size and 4-byte aligned.
-  CCIfType<[i32], CCAssignToStack<4, 4>>
+    // Integer values get stored in stack slots that are 8 bytes in
+    // size and 8-byte aligned.
+    CCIfType<[i64], CCAssignToStack<8, 8>>
 ]>;
 
-def CC_Save : CalleeSavedRegs<(add R4, R5, R6, R7, R8, R9)>;
+def CC_Save : CalleeSavedRegs<(add X19, X20, X21, X22, X23, X24, X25, X26, X27)>;

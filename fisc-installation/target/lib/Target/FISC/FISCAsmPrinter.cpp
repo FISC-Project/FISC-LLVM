@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #define DEBUG_TYPE "asm-printer"
+
 #include "FISC.h"
 #include "InstPrinter/FISCInstPrinter.h"
 #include "FISCInstrInfo.h"
@@ -44,40 +45,42 @@
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include <algorithm>
 #include <cctype>
+
 using namespace llvm;
 
 namespace {
 class FISCAsmPrinter : public AsmPrinter {
-  FISCMCInstLower MCInstLowering;
+    FISCMCInstLower MCInstLowering;
 
 public:
-  explicit FISCAsmPrinter(TargetMachine &TM, std::unique_ptr<MCStreamer> Streamer)
-      : AsmPrinter(TM, std::move(Streamer)), MCInstLowering(*this) {}
+    explicit FISCAsmPrinter(TargetMachine &TM, std::unique_ptr<MCStreamer> Streamer)
+        : AsmPrinter(TM, std::move(Streamer)), MCInstLowering(*this) {}
 
-  virtual const char *getPassName() const { return "FISC Assembly Printer"; }
+    virtual const char *getPassName() const { 
+        return "FISC Assembly Printer"; 
+    }
 
-  void EmitFunctionEntryLabel();
-  void EmitInstruction(const MachineInstr *MI);
-  void EmitFunctionBodyStart();
+    void EmitFunctionEntryLabel();
+    void EmitInstruction(const MachineInstr *MI);
+    void EmitFunctionBodyStart();
 };
 } // end of anonymous namespace
 
 void FISCAsmPrinter::EmitFunctionBodyStart() {
-  MCInstLowering.Initialize(Mang, &MF->getContext());
+    MCInstLowering.Initialize(Mang, &MF->getContext());
 }
 
 void FISCAsmPrinter::EmitFunctionEntryLabel() {
-  OutStreamer->EmitLabel(CurrentFnSym);
+    OutStreamer->EmitLabel(CurrentFnSym);
 }
 
 void FISCAsmPrinter::EmitInstruction(const MachineInstr *MI) {
-  MCInst TmpInst;
-  MCInstLowering.Lower(MI, TmpInst);
-
-  EmitToStreamer(*OutStreamer, TmpInst);
+    MCInst TmpInst;
+    MCInstLowering.Lower(MI, TmpInst);
+    EmitToStreamer(*OutStreamer, TmpInst);
 }
 
-// Force static initialization.
+/// Force static initialization.
 extern "C" void LLVMInitializeFISCAsmPrinter() {
-  RegisterAsmPrinter<FISCAsmPrinter> X(TheFISCTarget);
+    RegisterAsmPrinter<FISCAsmPrinter> X(TheFISCTarget);
 }

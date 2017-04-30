@@ -14,11 +14,15 @@
 #include "FISC.h"
 #include "FISCTargetMachine.h"
 #include "llvm/CodeGen/SelectionDAGISel.h"
+#include "llvm/CodeGen/MachineFrameInfo.h"
+#include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include "FISCInstrInfo.h"
+
+#define DEBUG_TYPE "fisc - instruction selection"
 
 using namespace llvm;
 
@@ -40,6 +44,11 @@ public:
     }
 
 private:
+    SDValue ConstantToRegisterExpand(SDNode * N, SDValue Constant);
+
+    SDNode *SelectIndexedLoad(SDNode *N);
+    SDNode *SelectIndexedStore(SDNode *N);
+    SDNode *SelectFrameIndex(SDNode *N);
     SDNode *SelectMoveImmediate(SDNode *N);
     SDNode *SelectConditionalBranch(SDNode *N);
 
@@ -59,7 +68,7 @@ bool FISCDAGToDAGISel::SelectAddr(SDValue Addr, SDValue &Base, SDValue &Offset) 
         Addr.getOpcode() == ISD::TargetGlobalAddress  ||
         Addr.getOpcode() == ISD::TargetGlobalTLSAddress) 
     {
-        return false; // direct calls.
+        return false; /// direct calls.
     }
 
     Base   = Addr;
@@ -67,29 +76,126 @@ bool FISCDAGToDAGISel::SelectAddr(SDValue Addr, SDValue &Base, SDValue &Offset) 
     return true;
 }
 
-SDNode *FISCDAGToDAGISel::SelectMoveImmediate(SDNode *N) {
-    /// Make sure the immediate size is supported.
-    ConstantSDNode *ConstVal = cast<ConstantSDNode>(N);
-    uint64_t ImmVal = ConstVal->getZExtValue();
-    uint64_t SupportedMask = 0xfffffffff;
-    if ((ImmVal & SupportedMask) != ImmVal)
-        return SelectCode(N);
+SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
+    // TODO: If the load is 32 bits, select LDRW, if 16 bits, select LDRH, if 8, LDRB
+    LoadSDNode *LDNode = cast<LoadSDNode>(N);
+    FrameIndexSDNode *FIN =	dyn_cast<FrameIndexSDNode>(N->getOperand(1));
+    SDValue Base   = CurDAG->getTargetFrameIndex(FIN->getIndex(), MVT::i64);
+    SDValue Offset = CurDAG->getTargetConstant(0, LDNode, MVT::i64);
+    SDValue ops[]  = { Base, Offset, LDNode->getChain() };
+    return CurDAG->getMachineNode(FISC::LDR, SDLoc(N), MVT::i64, MVT::Other, ops);;
+}
 
-    /// Select the low part of the immediate move.
-    uint64_t LoMask = 0xffff;
-    uint64_t HiMask = 0xffff0000;
-    uint64_t ImmLo  = (ImmVal & LoMask);
-    uint64_t ImmHi  = (ImmVal & HiMask);
-    SDValue ConstLo = CurDAG->getTargetConstant(ImmLo, N, MVT::i64);
-    MachineSDNode *Move =
-        CurDAG->getMachineNode(FISC::MOVK, N, MVT::i64, ConstLo);
+SDValue FISCDAGToDAGISel::ConstantToRegisterExpand(SDNode * N, SDValue Constant) {
+    /* This function deals with operands that are constants that should 
+       be replaced into a register output, where we'll load that constant into */
 
-    /// Select the low part of the immediate move, if needed.
-    if (ImmHi) {
-        SDValue ConstHi = CurDAG->getTargetConstant(ImmHi >> 16, N, MVT::i64);
-        Move = CurDAG->getMachineNode(FISC::MOVK, N, MVT::i64, SDValue(Move, 0), ConstHi);
+    /* We'll need to load this constant value into a new virtual register */
+
+    /* Convert SDValue into uint64_t */
+    uint64_t ImmVal = cast<ConstantSDNode>(Constant)->getZExtValue();
+
+    /* Split the value into four 16 bits quadrants */
+    uint64_t ImmQ1 = ImmVal & 0xffff;
+    uint64_t ImmQ2 = (ImmVal & 0xffff0000) >> 16;
+    uint64_t ImmQ3 = (ImmVal & 0xffff00000000) >> 32;
+    uint64_t ImmQ4 = (ImmVal & 0xffff000000000000) >> 48;
+
+    /* Reconstruct 4 SDValue variables out of the split values */
+    SDValue SD_ImmQ1 = CurDAG->getTargetConstant(ImmQ1, N, MVT::i64);
+    SDValue SD_ImmQ2 = CurDAG->getTargetConstant(ImmQ2, N, MVT::i64);
+    SDValue SD_ImmQ3 = CurDAG->getTargetConstant(ImmQ3, N, MVT::i64);
+    SDValue SD_ImmQ4 = CurDAG->getTargetConstant(ImmQ4, N, MVT::i64);
+
+    /* Use MOVZ (LSL=0) to move the 1st quadrant (16 bits) into the register */
+    MachineSDNode * Move = CurDAG->getMachineNode(FISC::MOVZ, N, MVT::i64, SD_ImmQ1, CurDAG->getTargetConstant(0, N, MVT::i64));
+
+    /* If the constant is bigger than 16 bits, we may need to use MOVK together with MOVZ */
+    if (ImmQ2)
+        Move = CurDAG->getMachineNode(FISC::MOVK, N, MVT::i64, SD_ImmQ2, CurDAG->getTargetConstant(1, N, MVT::i64), SDValue(Move, 0));
+    if (ImmQ3)
+        Move = CurDAG->getMachineNode(FISC::MOVK, N, MVT::i64, SD_ImmQ3, CurDAG->getTargetConstant(2, N, MVT::i64), SDValue(Move, 0));
+    if (ImmQ4)
+        Move = CurDAG->getMachineNode(FISC::MOVK, N, MVT::i64, SD_ImmQ4, CurDAG->getTargetConstant(3, N, MVT::i64), SDValue(Move, 0));
+
+    /* We're done converting this node */
+    return SDValue(Move, 0);
+}
+
+SDNode *FISCDAGToDAGISel::SelectIndexedStore(SDNode *N) {
+    // TODO: If the store is 32 bits, select STRW, if 16 bits, select STRH, if 8, STRB
+    StoreSDNode *STNode = cast<StoreSDNode>(N);
+    SDValue	Src    = STNode->getValue();
+    SDValue Base   = STNode->getBasePtr();
+    SDValue Offset = CurDAG->getTargetConstant(0, STNode, MVT::i64); /* The offset here is always 0. It will be adjusted on a later pass */
+
+    /* Check for operands that need to be handled/converted */
+
+    switch (Src.getOpcode()) {
+    case ISD::Constant: 
+        /* Source operand is a constant. We must mutate it into a load into a virtual register  */
+        Src = ConstantToRegisterExpand(N, Src);
+        break;
+    default:
+        /* Src is already set for this case */
+        break;
     }
 
+    switch (Base.getOpcode()) {
+    case ISD::Constant: 
+        /* Base register operand is a constant. We must mutate it into a load into a virtual register   */
+        Base = ConstantToRegisterExpand(N, Base);
+        break;
+    case ISD::CopyFromReg:
+        /* Base register is a virtual/physical register. Base was already set to this. */
+        break;
+    case ISD::FrameIndex: {
+        /* Fetch frame index from operand 2 from IR's STORE instruction */
+        FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>(STNode->getBasePtr());
+        Base = CurDAG->getTargetFrameIndex(FIN->getIndex(), MVT::i64);
+        break;
+    }
+    default: 
+        llvm_unreachable("Unknown base pointer opcode!");
+    }
+
+    /* Build and return Store instruction with the following operands */	
+    SDValue ops[]   = { Src, Base, Offset, STNode->getChain() };
+    return CurDAG->getMachineNode(FISC::STR, SDLoc(N), MVT::Other, ops);
+}
+
+SDNode *FISCDAGToDAGISel::SelectFrameIndex(SDNode *N) {
+    int FI = cast<FrameIndexSDNode>(N)->getIndex();
+    SDValue TFI = CurDAG->getTargetFrameIndex(FI, TLI->getPointerTy(CurDAG->getDataLayout()));
+    SDValue ops[] = { TFI, CurDAG->getTargetConstant(0, N, MVT::i64) };
+    return CurDAG->SelectNodeTo(N, FISC::ADDri, MVT::i64, ops);
+}
+
+SDNode *FISCDAGToDAGISel::SelectMoveImmediate(SDNode *N) {
+    /// Cast SDNode Constant operand into uint64_t
+    uint64_t ImmVal = cast<ConstantSDNode>(N)->getZExtValue();
+    
+    /// Mask the 64 bit value into 4 quadrants
+    uint64_t ImmQ1 = ImmVal & 0xffff;
+    uint64_t ImmQ2 = (ImmVal & 0xffff0000) >> 16;
+    uint64_t ImmQ3 = (ImmVal & 0xffff00000000) >> 32;
+    uint64_t ImmQ4 = (ImmVal & 0xffff000000000000) >> 48;
+    
+    SDValue SD_ImmQ1 = CurDAG->getTargetConstant(ImmQ1, N, MVT::i64);
+    SDValue SD_ImmQ2 = CurDAG->getTargetConstant(ImmQ2, N, MVT::i64);
+    SDValue SD_ImmQ3 = CurDAG->getTargetConstant(ImmQ3, N, MVT::i64);
+    SDValue SD_ImmQ4 = CurDAG->getTargetConstant(ImmQ4, N, MVT::i64);
+
+    /// Create MOVZ instruction with ImmQ1 and LSL=0
+    MachineSDNode *Move = CurDAG->getMachineNode(FISC::MOVZ, N, MVT::i64, SD_ImmQ1, CurDAG->getTargetConstant(0, N, MVT::i64));
+
+    /// Select each different quadrant, if needed
+    if (ImmQ2)
+        Move = CurDAG->getMachineNode(FISC::MOVK, N, MVT::i64, SD_ImmQ2, CurDAG->getTargetConstant(1, N, MVT::i64), SDValue(Move, 0));
+    if (ImmQ3)
+        Move = CurDAG->getMachineNode(FISC::MOVK, N, MVT::i64, SD_ImmQ3, CurDAG->getTargetConstant(2, N, MVT::i64), SDValue(Move, 0));
+    if (ImmQ4)
+        Move = CurDAG->getMachineNode(FISC::MOVK, N, MVT::i64, SD_ImmQ4, CurDAG->getTargetConstant(3, N, MVT::i64), SDValue(Move, 0));
     return Move;
 }
 
@@ -101,20 +207,28 @@ SDNode *FISCDAGToDAGISel::SelectConditionalBranch(SDNode *N) {
     SDValue Target = N->getOperand(4);
   
     /// Generate a comparison instruction.
-    EVT CompareTys[]     = { MVT::Other, MVT::Glue };
-    SDVTList CompareVT   = CurDAG->getVTList(CompareTys);
-    SDValue CompareOps[] = {LHS, RHS, Chain};
-    SDNode *Compare      = CurDAG->getMachineNode(FISC::CMP, N, CompareVT, CompareOps);
+    EVT      CompareTys[] = { MVT::Other, MVT::Glue };
+    SDVTList CompareVT    = CurDAG->getVTList(CompareTys);
+    SDValue  CompareOps[] = {LHS, RHS, Chain};
+    SDNode  *Compare      = CurDAG->getMachineNode(FISC::CMP, N, CompareVT, CompareOps);
   
     /// Generate a predicated branch instruction.
-    CondCodeSDNode *CC  = cast<CondCodeSDNode>(Cond.getNode());
-    SDValue CCVal       = CurDAG->getTargetConstant(CC->get(), N, MVT::i64);
-    SDValue BranchOps[] = {CCVal, Target, SDValue(Compare, 0), SDValue(Compare, 1)};
+    CondCodeSDNode *CC          = cast<CondCodeSDNode>(Cond.getNode());
+    SDValue         CCVal       = CurDAG->getTargetConstant(CC->get(), N, MVT::i64);
+    SDValue         BranchOps[] = {CCVal, Target, SDValue(Compare, 0), SDValue(Compare, 1)};
     return CurDAG->getMachineNode(FISC::Bcc, N, MVT::Other, BranchOps);
 }
 
 SDNode *FISCDAGToDAGISel::Select(SDNode *N) {
+    DEBUG(errs() << ">>>>>> Selecting Node: "; N->dump(CurDAG); errs() << "\n");
+        
     switch (N->getOpcode()) {
+    case ISD::LOAD:
+        return SelectIndexedLoad(N);
+    case ISD::STORE:
+        return SelectIndexedStore(N);
+    case ISD::FrameIndex:
+        return SelectFrameIndex(N);
     case ISD::Constant:
         return SelectMoveImmediate(N);
     case ISD::BR_CC:

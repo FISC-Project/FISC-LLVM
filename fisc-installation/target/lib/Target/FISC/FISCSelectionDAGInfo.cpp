@@ -12,6 +12,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "FISCSelectionDAGInfo.h"
+
 using namespace llvm;
 
 #define DEBUG_TYPE "FISC-selectiondag-info"

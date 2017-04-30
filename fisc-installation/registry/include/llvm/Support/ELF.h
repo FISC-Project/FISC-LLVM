@@ -602,11 +602,6 @@ enum {
 #include "ELFRelocs/Hexagon.def"
 };
 
-// ELF Relocation type for Lanai.
-enum {
-#include "ELFRelocs/Lanai.def"
-};
-
 // ELF Relocation types for S390/zSeries
 enum {
 #include "ELFRelocs/SystemZ.def"
@@ -620,16 +615,6 @@ enum {
 // ELF Relocation types for WebAssembly
 enum {
 #include "ELFRelocs/WebAssembly.def"
-};
-
-// ELF Relocation types for AMDGPU
-enum {
-#include "ELFRelocs/AMDGPU.def"
-};
-
-// ELF Relocation types for BPF
-enum {
-#include "ELFRelocs/BPF.def"
 };
 
 // ELF Relocation types for FISC

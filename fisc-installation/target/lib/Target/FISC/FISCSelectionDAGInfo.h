@@ -20,8 +20,8 @@ namespace llvm {
 
 class FISCSelectionDAGInfo : public TargetSelectionDAGInfo {
 public:
-  ~FISCSelectionDAGInfo();
+    ~FISCSelectionDAGInfo();
 };
-}
+} // end namespace llvm
 
 #endif

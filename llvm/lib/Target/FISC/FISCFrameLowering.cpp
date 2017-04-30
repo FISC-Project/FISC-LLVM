@@ -60,17 +60,41 @@ static unsigned materializeOffset(MachineFunction &MF, MachineBasicBlock &MBB,
         return 0;
     } else {
         /// The stack offset does not fit in the ADD/SUB instruction.
-        /// Materialize the offset using MOVLO/MOVHI.
+        /// Materialize the offset using MOVZ+MOVK.
         unsigned OffsetReg = FISC::X9;
-        unsigned OffsetLo = (unsigned)(Offset & 0xffff);
-        unsigned OffsetHi = (unsigned)((Offset & 0xffff0000) >> 16);
+        unsigned OffsetQ1 = (unsigned)(Offset & 0xffff);
+        unsigned OffsetQ2 = (unsigned)((Offset & 0xffff0000) >> 16);
+        unsigned OffsetQ3 = (unsigned)((Offset & 0xffff00000000) >> 32);
+        unsigned OffsetQ4 = (unsigned)((Offset & 0xffff000000000000) >> 48);
+
+        /// FIXME: ADD THE LSL OPERANDS!!
+
+        /// Build MOVK:
         BuildMI(MBB, MBBI, dl, TII.get(FISC::MOVZ), OffsetReg)
-            .addImm(OffsetLo)
+            .addImm(OffsetQ1)
             .setMIFlag(MachineInstr::FrameSetup);
-        if (OffsetHi) {
+
+        /// If offset is larger than 16 bits, build MOVK as well:
+        if (OffsetQ2) {
             BuildMI(MBB, MBBI, dl, TII.get(FISC::MOVK), OffsetReg)
                 .addReg(OffsetReg)
-                .addImm(OffsetHi)
+                .addImm(OffsetQ2)
+                .setMIFlag(MachineInstr::FrameSetup);
+        }
+
+        /// If offset is larger than 32 bits, build another MOVK:
+        if (OffsetQ3) {
+            BuildMI(MBB, MBBI, dl, TII.get(FISC::MOVK), OffsetReg)
+                .addReg(OffsetReg)
+                .addImm(OffsetQ3)
+                .setMIFlag(MachineInstr::FrameSetup);
+        }
+
+        /// If offset is larger than 48 bits, build a last MOVK:
+        if (OffsetQ4) {
+            BuildMI(MBB, MBBI, dl, TII.get(FISC::MOVK), OffsetReg)
+                .addReg(OffsetReg)
+                .addImm(OffsetQ4)
                 .setMIFlag(MachineInstr::FrameSetup);
         }
         return OffsetReg;

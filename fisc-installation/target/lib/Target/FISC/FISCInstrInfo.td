@@ -18,151 +18,119 @@ include "FISCOperators.td"
 // ALU Instructions
 //===----------------------------------------------------------------------===//
 
-multiclass BinOp<bits<4> opcode, string opstr, SDNode opnode> {
-  def rr : ALUInst<opcode, (outs GRRegs:$dst),
-                   (ins GRRegs:$src1, GRRegs:$src2),
-                   !strconcat(opstr, " $dst, $src1, $src2"),
-                   [(set i32:$dst, (opnode i32:$src1, i32:$src2))]> {
-    bits<4> dst;
-    bits<4> src1;
-    bits<4> src2;
-    let Inst{25} = 0;
-    let Inst{20} = 0;  // We never update flags
-    let Inst{19-16} = src1;
-    let Inst{15-12} = dst;
-    let Inst{11-4}  = 0b00000000;
-    let Inst{3-0}   = src2;
-  }
-  def ri : ALUInst<opcode, (outs GRRegs:$dst),
-                   (ins GRRegs:$src1, i32imm:$imm),
-                   !strconcat(opstr, " $dst, $src1, $imm"),
-                   [(set i32:$dst, (opnode i32:$src1, FISCimm8:$imm))]> {
-    bits<4> dst;
-    bits<4> src1;
-    bits<12> imm;
-    let Inst{25} = 1;
-    let Inst{20} = 0;  // We never update flags
-    let Inst{19-16} = dst;
-    let Inst{15-12} = src1;
-    let Inst{11-0}  = imm;
-  }
+multiclass BinOp<bits<11> opcode_r, bits<10> opcode_i, string opstr, SDNode opnode> 
+{
+    def rr : ALURInst<opcode_r, (outs GRRegs:$dst),
+                                (ins GRRegs:$src1, GRRegs:$src2),
+                                !strconcat(opstr, " $dst, $src1, $src2"),
+                                [(set i64:$dst, (opnode i64:$src1, i64:$src2))]> 
+    {
+        bits<5> dst;
+        bits<5> src1;
+        bits<5> src2;
+        let Inst{20-16} = src2;
+        let Inst{15-10} = 0b000000; // shamt value is always 0 in this case
+        let Inst{9-5}   = src1;
+        let Inst{4-0}   = dst;
+    }
+    def ri : ALUIInst<opcode_i, (outs GRRegs:$dst),
+                                (ins GRRegs:$src1, i64imm:$imm),
+                                !strconcat(opstr, " $dst, $src1, $imm"),
+                                [(set i64:$dst, (opnode i64:$src1, FISCimm12:$imm))]> 
+    {
+        bits<5>  dst;
+        bits<5>  src1;
+        bits<12> imm;
+        let Inst{21-10} = imm;
+        let Inst{9-5}   = src1;
+        let Inst{4-0}   = dst;
+    }
 }
 
-multiclass ShiftOp<bits<4> opcoder, bits<3> opcodei, string opstr, SDNode opnode> {
-  def rr : ALUInst<0b1101, (outs GRRegs:$dst),
-                   (ins GRRegs:$src1, GRRegs:$src2),
-                   !strconcat(opstr, " $dst, $src1, $src2"),
-                   [(set i32:$dst, (opnode i32:$src1, i32:$src2))]> {
-    bits<4> dst;
-    bits<4> src1;
-    bits<4> src2;
-    let Inst{25}    = 0;
-    let Inst{20}    = 0;  // We never update flags
-    let Inst{19-16} = 0b0000;
-    let Inst{15-12} = dst;
-    let Inst{11-8}  = src2;
-    let Inst{7-4}   = opcoder;
-    let Inst{3-0}   = src1;
-  }
-  def ri : ALUInst<0b1101, (outs GRRegs:$dst),
-                   (ins GRRegs:$src1, i32imm:$imm),
-                   !strconcat(opstr, " $dst, $src1, $imm"),
-                   [(set i32:$dst, (opnode i32:$src1, FISCimm8:$imm))]> {
-    bits<4> dst;
-    bits<4> src1;
-    bits<5> imm;
-    let Inst{25}    = 0;
-    let Inst{20}    = 0;  // We never update flags
-    let Inst{19-16} = 0b0000;
-    let Inst{15-12} = dst;
-    let Inst{11-7}  = imm;
-    let Inst{6-4}   = opcodei;
-    let Inst{3-0}   = src1;
-  }
+multiclass ShiftOp<bits<11> opcode, string opstr, SDNode opnode> 
+{
+    def : ALURInst<opcode, (outs GRRegs:$dst),
+                           (ins GRRegs:$src1, i64imm:$imm),
+                           !strconcat(opstr, " $dst, $src1, $imm"),
+                           [(set i64:$dst, (opnode i64:$src1, FISCimm6:$imm))]> 
+    {
+        bits<5>  dst;
+        bits<5>  src1;
+        bits<6> imm;
+        let Inst{20-16} = 31;
+        let Inst{15-10} = imm;
+        let Inst{9-5}   = src1;
+        let Inst{4-0}   = dst;
+    }
 }
 
-defm ADD  : BinOp<0b0100, "add", add>;
-defm SUB  : BinOp<0b0010, "sub", sub>;
-defm AND  : BinOp<0b0000, "and", and>;
-defm EOR  : BinOp<0b0001, "eor", xor>;
-defm ORR  : BinOp<0b1100, "orr", or>;
-
-defm LSL  : ShiftOp<0b0001, 0b000, "lsl", shl>;
-defm LSR  : ShiftOp<0b0011, 0b010, "lsr", srl>;
-defm ASR  : ShiftOp<0b0101, 0b100, "asr", sra>;
+defm ADD  : BinOp<0b10001011000, 0b1001000100, "add",  add>;
+defm ADDS : BinOp<0b10101011000, 0b1011000100, "adds", add>;
+defm SUB  : BinOp<0b11001011000, 0b1101000100, "sub",  sub>;
+defm SUBS : BinOp<0b10101011000, 0b1011000100, "subs", sub>;
+defm AND  : BinOp<0b10001010000, 0b1001001000, "and",  and>;
+defm ANDS : BinOp<0b11101010000, 0b1111001000, "ands", and>;
+defm EOR  : BinOp<0b11001010000, 0b1101001000, "eor",  xor>;
+defm ORR  : BinOp<0b10101010000, 0b1011001000, "orr",  or>;
+defm LSL  : ShiftOp<0b11010011011, "lsl", shl>;
+defm LSR  : ShiftOp<0b11010011010, "lsr", srl>;
 
 //===----------------------------------------------------------------------===//
 // Multiply Instructions
 //===----------------------------------------------------------------------===//
 
-def MUL  : MulInst<0b0000000, (outs GRRegs:$dst),
+def MUL  : ALURInst<0b10011011000, (outs GRRegs:$dst),
                    (ins GRRegs:$src1, GRRegs:$src2),
                    "mul $dst, $src1, $src2",
-                   [(set i32:$dst, (mul i32:$src1, i32:$src2))]> {
-  bits<4> dst;
-  bits<4> src1;
-  bits<4> src2;
-  let Inst{19-16} = dst;
-  let Inst{15-12} = 0b0000;
-  let Inst{11-8}  = src2;
-  let Inst{3-0}   = src1;
-}
-
-def MLA  : MulInst<0b0000001, (outs GRRegs:$dst),
-                   (ins GRRegs:$src1, GRRegs:$src2, GRRegs:$src3),
-                   "mla $dst, $src1, $src2, $src3",
-                   [(set i32:$dst, (add (mul i32:$src1, i32:$src2),
-                                         i32:$src3))]> {
-  bits<4> dst;
-  bits<4> src1;
-  bits<4> src2;
-  bits<4> src3;
-  let Inst{19-16} = dst;
-  let Inst{15-12} = src3;
-  let Inst{11-8}  = src2;
-  let Inst{3-0}   = src1;
+                   [(set i64:$dst, (mul i64:$src1, i64:$src2))]> 
+{
+    bits<5> dst;
+    bits<5> src1;
+    bits<5> src2;
+    let Inst{20-16} = src2;
+    let Inst{15-10} = 0b011111;
+    let Inst{9-5}   = src1;
+    let Inst{4-0}   = dst;
 }
 
 //===----------------------------------------------------------------------===//
 // Mov Instructions
 //===----------------------------------------------------------------------===//
-def MOVrr  : ALUInst<0b1101, (outs GRRegs:$dst), (ins GRRegs:$src),
-                     "mov $dst, $src",
-                     [/* No pattern */]> {
-  bits<4> dst;
-  bits<4> src;
-  let Inst{25-27} = 0b000;  
-  let Inst{20} = 0;
-  let Inst{19-16} = 0b0000;
-  let Inst{15-12} = dst;
-  let Inst{11-4}  = 0b00000000;
-  let Inst{3-0} = src;
+
+def MOVrr  : ALUIInst<0b1001000100, (outs GRRegs:$dst), (ins GRRegs:$src),
+                                    "mov $dst, $src",
+                                    [/* No pattern */]> 
+{
+    bits<5> dst;
+    bits<5> src;
+    let Inst{21-10} = 0;
+    let Inst{9-5}   = src;
+    let Inst{4-0}   = dst;
 }
 
 //===----------------------------------------------------------------------===//
 // Mov Immediate Instructions
 //===----------------------------------------------------------------------===//
 
-class MOV<bits<4> opcode, string opstr, dag ins, list<dag>pattern>
-    : ALUInst<opcode, (outs GRRegs:$dst), ins,
-              !strconcat(opstr, " $dst, $imm"), pattern> {
-  bits<4> dst;
-  bits<16> imm;
-  let Inst{15-12} = dst;
-  let Inst{11-0}  = imm{11-0};
-  let Inst{19-16} = imm{15-12};
-  let Inst{20} = 0;
-  let Inst{25} = 1;
+class MOV<bits<9> opcode, string opstr, dag ins>
+    : IWInst<opcode, (outs GRRegs:$dst), ins,
+            !strconcat(opstr, " $dst, $imm, $lsl"), []> 
+{
+    bits<5>  dst;
+    bits<16> imm;
+    bits<2>  lsl;
+    let Inst{22-21} = lsl;
+    let Inst{20-5}  = imm;
+    let Inst{4-0}   = dst;
 }
 
-def MOVLOi16 : MOV<0b1000, "movw", (ins i32imm:$imm),
-                  [(set i32:$dst, i32imm_lo:$imm)]>;
-def MOVHIi16 : MOV<0b1010, "movt", (ins GRRegs:$src1, i32imm:$imm),
-                  [/* No Pattern */]>;
+def MOVK : MOV<0b111100101, "movk",(ins i64imm:$imm, i64imm:$lsl, i64imm:$ign)>;
+def MOVZ : MOV<0b110100101, "movz",(ins i64imm:$imm, i64imm:$lsl)>;
 
-def MOVi32 : InstFISC<(outs GRRegs:$dst), (ins i32imm:$src), "",
-                     [(set i32:$dst, (movei32 imm:$src))]> {
-  let isPseudo = 1;
+def MOVi64 : InstFISC<(outs GRRegs:$dst), (ins i64imm:$src), "",
+                      [(set i64:$dst, (movei64 imm:$src))]> 
+{
+    let isPseudo = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -170,18 +138,15 @@ def MOVi32 : InstFISC<(outs GRRegs:$dst), (ins i32imm:$src), "",
 //===----------------------------------------------------------------------===//
 
 def CMP : InstFISC<(outs), (ins GRRegs:$lhs, GRRegs:$rhs),
-                    "cmp $lhs, $rhs", []> {
-  bits<4> lhs;
-  bits<4> rhs;
-  let Inst{27-20} = 0b00010101;
-  let Inst{19-16} = lhs;
-  let Inst{15-12}  = 0b0000;
-  let Inst{11-7}  = 0b00000; // imm5
-  let Inst{6-5} = 0b00; // type
-  let Inst{4} = 0b0;
-  let Inst{3-0} = rhs;
-  
-  let Defs = [CPSR];
+                    "cmp $lhs, $rhs", []> 
+{
+    bits<5> lhs;
+    bits<5> rhs;
+    let Inst{31-21} = 0b11101011000;
+    let Inst{20-16} = rhs;
+    let Inst{15-10} = 0;
+    let Inst{9-5}   = lhs;
+    let Inst{4-0}   = 31;
 }
 
 //===----------------------------------------------------------------------===//
@@ -190,93 +155,87 @@ def CMP : InstFISC<(outs), (ins GRRegs:$lhs, GRRegs:$rhs),
 
 def LDR  : InstFISC<(outs GRRegs:$val), (ins memsrc:$addr),
                    "ldr $val, $addr",
-                   [(set i32:$val, (load addr:$addr))]> {
-  bits<4> val;
-  bits<16> addr;
-  let Inst{27-25} = 0b010;
-  let Inst{24} = 1; // not indexed
-  let Inst{23} = 1; // add ofset
-  let Inst{22} = 0;
-  let Inst{21} = 0; // no writeback
-  let Inst{20} = 1; // load
-  let Inst{19-16} = addr{15-12};
-  let Inst{15-12} = val;
-  let Inst{11-0} = addr{11-0};
+                   [(set i64:$val, (load addr:$addr))]>
+{
+    bits<5>  val;
+    bits<14> addr;
+    let Inst{31-21} = 0b11111000010;
+    let Inst{20-12} = addr{8-0};
+    let Inst{11-10} = 0b00;
+    let Inst{9-5}   = addr{13-9};
+    let Inst{4-0}   = val;
 }
 
 def STR : InstFISC<(outs), (ins GRRegs:$val, memsrc:$addr),
                   "str $val, $addr",
-                  [(store i32:$val, addr:$addr)]> {
-  bits<16> addr;
-  bits<4> val;
-  let Inst{27-25} = 0b010;
-  let Inst{24} = 1; // not indexed
-  let Inst{23} = 1; // add ofset
-  let Inst{22} = 0;
-  let Inst{21} = 0; // no writeback
-  let Inst{20} = 0; // store
-  let Inst{19-16} = addr{15-12};
-  let Inst{15-12} = val;
-  let Inst{11-0} = addr{11-0};
+                  [(store i64:$val, addr:$addr)]> 
+{
+    bits<14> addr;
+    bits<5>  val;
+    let Inst{31-21} = 0b11111000000;
+    let Inst{20-12} = addr{8-0};
+    let Inst{11-10} = 0b00;
+    let Inst{9-5}   = addr{13-9};
+    let Inst{4-0}   = val;
 }
 
 //===----------------------------------------------------------------------===//
 // Return Instructions
 //===----------------------------------------------------------------------===//
 
-let isTerminator = 1, isReturn = 1, isBarrier = 1, Uses = [LR] in {
-  def RET : InstFISC<(outs), (ins variable_ops),
-                    "bx lr",  [(FISCRetFlag)]> {
-    let Inst{27-0}  = 0b0001001011111111111100011110;
-  }
+let isTerminator = 1, isReturn = 1, isBarrier = 1, Uses = [LR] in
+{
+    def RET : InstFISC<(outs), (ins variable_ops), "br lr",  [(FISCRetFlag)]> 
+    {
+        let Inst{31-0} = 0b11010110000111100000000000000000;
+    }
 }
-
 
 //===----------------------------------------------------------------------===//
 // Call Instructions
 //===----------------------------------------------------------------------===//
 
-let isCall = 1, Defs = [LR], Uses = [SP] in {
-  def BL : BranchInst<0b1011, (outs), (ins GRRegs:$addr),
-                      "bl $addr",
-                      [(FISC_call i32:$addr)]> {
-    bits<4> addr;
-    let Inst{31-28} = 0b1110;
-    let Inst{3-0} = addr;
-  }
+let isCall = 1, Defs = [LR], Uses = [SP] in 
+{
+    def BL : UncondBranchInst<0b100101, (outs), (ins calltarget:$addr), "bl $addr", []>
+    {
+        bits<26> addr;
+        let Inst{25-0} = addr;
+    }
 }
 
-def : Pattern<(i32 (load_sym tglobaladdr:$addr)),  [(MOVi32 $addr)]>;
+def : Pat<(fisc_call i64:$dst), (BL tglobaladdr:$dst)>;
+//FIXME def : Pattern<(i64 (load_sym tglobaladdr:$addr)), [(MOVi64 $addr)]>;
 
 //===----------------------------------------------------------------------===//
 // Branch Instructions
 //===----------------------------------------------------------------------===//
 
-let isTerminator = 1, isBranch = 1, isBarrier = 1 in {
-  def B : InstFISC<(outs), (ins b_target:$dst),
-                  "b $dst", [(br bb:$dst)]> {
-    bits<24> dst;
-    let Inst{31-28} = 0b0000;
-    let Inst{27-24} = 0b1010;
-    let Inst{23-0} = dst;
-  }
+let isTerminator = 1, isBranch = 1, isBarrier = 1 in 
+{
+    def B : InstFISC<(outs), (ins b_target:$dst), "b $dst", [(br bb:$dst)]> 
+    {
+        bits<26> dst;
+        let Inst{31-26} = 0b001010;
+        let Inst{25-0}  = dst;
+    }
 }
 
-let isTerminator = 1, isBranch = 1, Uses = [CPSR] in {
-  def Bcc : InstFISC<(outs), (ins cc_val:$cc, b_target:$dst),
-                    "b$cc $dst",  []> {
-  }
+let isTerminator = 1, isBranch = 1 in 
+{
+    def Bcc : InstFISC<(outs), (ins cc_val:$cc, b_target:$dst), "b$cc $dst",  []>;
 }
 
 //===----------------------------------------------------------------------===//
 // Pseudo Instructions
 //===----------------------------------------------------------------------===//
 
-let Defs = [SP], Uses = [SP] in {
-def ADJCALLSTACKDOWN : FISCPseudoInst<(outs), (ins i32imm:$amt),
-                                    "# ADJCALLSTACKDOWN $amt",
-                                    [(callseq_start timm:$amt)]>;
-def ADJCALLSTACKUP   : FISCPseudoInst<(outs), (ins i32imm:$amt1, i32imm:$amt2),
-                                    "# ADJCALLSTACKUP $amt1",
-                                    [(callseq_end timm:$amt1, timm:$amt2)]>;
+let Defs = [SP], Uses = [SP] in 
+{
+    def ADJCALLSTACKDOWN : FISCPseudoInst<(outs), (ins i64imm:$amt),
+                                          "# ADJCALLSTACKDOWN $amt",
+                                          [(callseq_start timm:$amt)]>;
+    def ADJCALLSTACKUP   : FISCPseudoInst<(outs), (ins i64imm:$amt1, i64imm:$amt2),
+                                          "# ADJCALLSTACKUP $amt1",
+                                          [(callseq_end timm:$amt1, timm:$amt2)]>;
 }

@@ -11,41 +11,51 @@
 // Instruction format superclass
 //===----------------------------------------------------------------------===//
 class InstFISC<dag outs, dag ins, string asmstr, list<dag> pattern>
-    : Instruction {
-  field bits<32> Inst;
+    : Instruction 
+{
+    field bits<32> Inst;
 
-  let Namespace = "FISC";
-  dag OutOperandList = outs;
-  dag InOperandList = ins;
-  let AsmString   = asmstr;
-  let Pattern = pattern;
-  let Size = 4;
-
-  // Always execute - no condition flags for this example
-  let Inst{31-28} = 0b1110;
+    let Namespace      = "FISC";
+    dag OutOperandList = outs;
+    dag InOperandList  = ins;
+    let AsmString      = asmstr;
+    let Pattern        = pattern;
+    let Size           = 4;
 }
 
 // FISC pseudo instructions format
 class FISCPseudoInst<dag outs, dag ins, string asmstr, list<dag> pattern>
-    : InstFISC<outs, ins, asmstr, pattern> {
-  let isPseudo = 1;
+    : InstFISC<outs, ins, asmstr, pattern> 
+{
+    let isPseudo = 1;
 }
 
-class ALUInst<bits<4> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
-    : InstFISC<outs, ins, asmstr, pattern> {
-  let Inst{27-26} = 0b00;
-  let Inst{24-21} = opcode;
+class ALURInst<bits<11> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
+    : InstFISC<outs, ins, asmstr, pattern> 
+{
+    let Inst{31-21} = opcode;
 }
 
-class MulInst<bits<7> opcode, dag outs, dag ins, string asmstr,
-              list<dag> pattern> : InstFISC<outs, ins, asmstr, pattern> {
-  let Inst{27-21} = opcode;
-  let Inst{20}    = 0;  // We never update flags
-  let Inst{7-4}   = 0b1001;
+class ALUIInst<bits<10> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
+    : InstFISC<outs, ins, asmstr, pattern> 
+{
+    let Inst{31-22} = opcode;
 }
 
-class BranchInst<bits<4> opcode, dag outs, dag ins,
-                 string asmstr, list<dag> pattern>
-    : InstFISC<outs, ins, asmstr, pattern> {
-  let Inst{27-24} = opcode;
+class IWInst<bits<9> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
+    : InstFISC<outs, ins, asmstr, pattern> 
+{
+    let Inst{31-23} = opcode;
+}
+
+class UncondBranchInst<bits<6> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
+    : InstFISC<outs, ins, asmstr, pattern> 
+{
+    let Inst{31-26} = opcode;
+}
+
+class CondBranchInst<bits<8> opcode, dag outs, dag ins, string asmstr, list<dag> pattern>
+    : InstFISC<outs, ins, asmstr, pattern> 
+{
+    let Inst{31-24} = opcode;
 }

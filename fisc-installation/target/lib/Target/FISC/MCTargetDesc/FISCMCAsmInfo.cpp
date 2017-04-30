@@ -9,21 +9,23 @@
 
 #include "FISCMCAsmInfo.h"
 #include "llvm/ADT/StringRef.h"
+
 using namespace llvm;
 
 void FISCMCAsmInfo::anchor() {}
 
 FISCMCAsmInfo::FISCMCAsmInfo(const Triple &TT) {
-  SupportsDebugInformation = true;
-  Data16bitsDirective      = "\t.short\t";
-  Data32bitsDirective      = "\t.long\t";
-  Data64bitsDirective      = 0;
-  ZeroDirective            = "\t.space\t";
-  CommentString            = "#";
-  AscizDirective           = ".asciiz";
+    SupportsDebugInformation = true;
+    Data8bitsDirective       = "\t.byte\t";
+    Data16bitsDirective      = "\t.hword\t";
+    Data32bitsDirective      = "\t.word\t";
+    Data64bitsDirective      = "\t.dword\t";
+    ZeroDirective            = "\t.space\t";
+    CommentString            = "#";
+    AscizDirective           = ".asciiz";
 
-  HiddenVisibilityAttr            = MCSA_Invalid;
-  HiddenDeclarationVisibilityAttr = MCSA_Invalid;
-  ProtectedVisibilityAttr         = MCSA_Invalid;
+    HiddenVisibilityAttr            = MCSA_Invalid;
+    HiddenDeclarationVisibilityAttr = MCSA_Invalid;
+    ProtectedVisibilityAttr         = MCSA_Invalid;
 }
 

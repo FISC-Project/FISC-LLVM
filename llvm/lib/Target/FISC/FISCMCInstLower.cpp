@@ -71,11 +71,20 @@ MCOperand FISCMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
     switch (Option) {
     default:
         break;
-    case FISCII::MO_LO16:
-        Kind = MCSymbolRefExpr::VK_FISC_LO;
+    case FISCII::MO_Q1:
+        Kind = MCSymbolRefExpr::VK_FISC_Q1;
         break;
-    case FISCII::MO_HI16:
-        Kind = MCSymbolRefExpr::VK_FISC_HI;
+    case FISCII::MO_Q2:
+        Kind = MCSymbolRefExpr::VK_FISC_Q2;
+        break;
+    case FISCII::MO_Q3:
+        Kind = MCSymbolRefExpr::VK_FISC_Q3;
+        break;
+    case FISCII::MO_Q4:
+        Kind = MCSymbolRefExpr::VK_FISC_Q4;
+        break;
+    case FISCII::MO_CALL26:
+        Kind = MCSymbolRefExpr::VK_FISC_CALL26;
         break;
     }
     const MCSymbolRefExpr *MCSym = MCSymbolRefExpr::create(Symbol, Kind, *Ctx);
@@ -114,7 +123,7 @@ MCOperand FISCMCInstLower::LowerOperand(const MachineOperand &MO, unsigned offse
     case MachineOperand::MO_RegisterMask:
         break;
     }
-
+    
     return MCOperand();
 }
 

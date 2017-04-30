@@ -6,11 +6,6 @@
 // License. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
-//
-// This file contains FISC frame information that doesn't fit anywhere else
-// cleanly...
-//
-//===----------------------------------------------------------------------===//
 
 #ifndef FISCFRAMEINFO_H
 #define FISCFRAMEINFO_H
@@ -19,34 +14,30 @@
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
+
 class FISCSubtarget;
 
 class FISCFrameLowering : public TargetFrameLowering {
 public:
-  FISCFrameLowering();
+	FISCFrameLowering();
 
-  /// emitProlog/emitEpilog - These methods insert prolog and epilog code into
-  /// the function.
-  void emitPrologue(MachineFunction &MF,
-                    MachineBasicBlock &MBB) const override;
-  void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+	/// emitProlog/emitEpilog - These methods insert prolog and epilog code into the function.
+	void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+	void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
 
-  void eliminateCallFramePseudoInstr(MachineFunction &MF,
-                                     MachineBasicBlock &MBB,
-                                     MachineBasicBlock::iterator I)
-                                     const override;
+	void eliminateCallFramePseudoInstr(MachineFunction &MF, MachineBasicBlock &MBB, MachineBasicBlock::iterator I) const override;
 
-  bool hasFP(const MachineFunction &MF) const override;
+	bool hasFP(const MachineFunction &MF) const override;
 
-  //! Stack slot size (4 bytes)
-  static int stackSlotSize() { 
-    return 4; 
-  }
+	///! Stack slot size (8 bytes)
+	static int stackSlotSize() { 
+		return 8; 
+	}
 
 private:
-  uint64_t computeStackSize(MachineFunction &MF) const;
+	uint64_t computeStackSize(MachineFunction &MF) const;
 };
-}
+} // end namespace llvm
 
 #endif // FISCFRAMEINFO_H
 

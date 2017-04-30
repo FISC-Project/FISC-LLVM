@@ -99,7 +99,7 @@ unsigned FISCMCCodeEmitter::getMachineOpValue(const MCInst &MI,
 
     const MCExpr *Expr = MO.getExpr();
     MCExpr::ExprKind Kind = Expr->getKind();
-
+    
     if (Kind == MCExpr::Binary) {
         Expr = static_cast<const MCBinaryExpr*>(Expr)->getLHS();
         Kind = Expr->getKind();
@@ -111,14 +111,21 @@ unsigned FISCMCCodeEmitter::getMachineOpValue(const MCInst &MI,
     switch (cast<MCSymbolRefExpr>(Expr)->getKind()) {
     default:
         llvm_unreachable("Unknown fixup kind!");
-    case MCSymbolRefExpr::VK_FISC_LO: {
-        FixupKind = FISC::fixup_FISC_mov_lo16_pcrel;
+    case MCSymbolRefExpr::VK_FISC_Q1:
+        FixupKind = FISC::fixup_fisc_mov_q1_pcrel;
         break;
-    }
-    case MCSymbolRefExpr::VK_FISC_HI: {
-        FixupKind = FISC::fixup_FISC_mov_hi16_pcrel;
+    case MCSymbolRefExpr::VK_FISC_Q2:
+        FixupKind = FISC::fixup_fisc_mov_q2_pcrel;
         break;
-    }
+    case MCSymbolRefExpr::VK_FISC_Q3:
+        FixupKind = FISC::fixup_fisc_mov_q3_pcrel;
+        break;
+    case MCSymbolRefExpr::VK_FISC_Q4:
+        FixupKind = FISC::fixup_fisc_mov_q4_pcrel;
+        break;
+    case MCSymbolRefExpr::VK_FISC_CALL26:
+        FixupKind = FISC::fixup_fisc_call26_pcrel;
+        break;
     }
 
     Fixups.push_back(MCFixup::create(0, MO.getExpr(), MCFixupKind(FixupKind)));
@@ -133,8 +140,8 @@ unsigned FISCMCCodeEmitter::getMemSrcValue(const MCInst &MI, unsigned OpIdx,
     const MCOperand &RegMO = MI.getOperand(OpIdx);
     const MCOperand &ImmMO = MI.getOperand(OpIdx + 1);
     assert(ImmMO.getImm() >= 0);
-    Bits |= (getMachineOpValue(MI, RegMO, Fixups, STI) << 12);
-    Bits |= (unsigned)ImmMO.getImm() & 0xfff;
+    Bits |= (getMachineOpValue(MI, RegMO, Fixups, STI) << 9);
+    Bits |= (unsigned)ImmMO.getImm() & 0x1ff;
     return Bits;
 }
 

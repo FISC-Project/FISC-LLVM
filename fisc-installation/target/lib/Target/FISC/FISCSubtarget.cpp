@@ -25,8 +25,7 @@ using namespace llvm;
 
 void FISCSubtarget::anchor() {}
 
-FISCSubtarget::FISCSubtarget(const Triple &TT, StringRef CPU, StringRef FS,
-                           FISCTargetMachine &TM)
+FISCSubtarget::FISCSubtarget(const Triple &TT, StringRef CPU, StringRef FS, FISCTargetMachine &TM)
     : FISCGenSubtargetInfo(TT, CPU, FS),
-      DL("e-m:e-p:32:32-i1:8:32-i8:8:32-i16:16:32-i64:32-f64:32-a:0:32-n32"),
+      DL("E-p:64:64-i1:8:64-i8:8:64-i16:16:64-i32:32:64-f64:64-a:0:64-n64"),
       InstrInfo(), TLInfo(TM), TSInfo(), FrameLowering() {}

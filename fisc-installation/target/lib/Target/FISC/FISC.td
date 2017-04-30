@@ -41,5 +41,5 @@ def : Proc<"generic", []>;
 //===----------------------------------------------------------------------===//
 
 def FISC : Target {
-  let InstructionSet = FISCInstrInfo;
+    let InstructionSet = FISCInstrInfo;
 }

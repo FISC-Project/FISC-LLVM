@@ -86,6 +86,7 @@ void FISCRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
 
     /// Determine if we can eliminate the index from this kind of instruction.
     unsigned ImmOpIdx = 0;
+
     switch (MI.getOpcode()) {
     default:
         /// Not supported yet.

@@ -33,126 +33,131 @@ STATISTIC(MCNumEmitted, "Number of MC instructions emitted.");
 
 namespace {
 class FISCMCCodeEmitter : public MCCodeEmitter {
-  FISCMCCodeEmitter(const FISCMCCodeEmitter &) = delete;
-  void operator=(const FISCMCCodeEmitter &) = delete;
-  const MCInstrInfo &MCII;
-  const MCContext &CTX;
+    FISCMCCodeEmitter(const FISCMCCodeEmitter &) = delete;
+    void operator=(const FISCMCCodeEmitter &)    = delete;
+    const MCInstrInfo &MCII;
+    const MCContext   &CTX;
 
 public:
-  FISCMCCodeEmitter(const MCInstrInfo &mcii, MCContext &ctx)
-      : MCII(mcii), CTX(ctx) {}
+    FISCMCCodeEmitter(const MCInstrInfo &mcii, MCContext &ctx)
+        : MCII(mcii), CTX(ctx) {}
 
-  ~FISCMCCodeEmitter() {}
+    ~FISCMCCodeEmitter() {}
 
-  // getBinaryCodeForInstr - TableGen'erated function for getting the
-  // binary encoding for an instruction.
-  uint64_t getBinaryCodeForInstr(const MCInst &MI,
-                                 SmallVectorImpl<MCFixup> &Fixups,
-                                 const MCSubtargetInfo &STI) const;
+    /// getBinaryCodeForInstr - TableGen'erated function for getting the
+    /// binary encoding for an instruction.
+    uint64_t getBinaryCodeForInstr(const MCInst &MI,
+                                   SmallVectorImpl<MCFixup> &Fixups,
+                                   const MCSubtargetInfo &STI) const;
 
-  /// getMachineOpValue - Return binary encoding of operand. If the machine
-  /// operand requires relocation, record the relocation and return zero.
-  unsigned getMachineOpValue(const MCInst &MI, const MCOperand &MO,
-                             SmallVectorImpl<MCFixup> &Fixups,
-                             const MCSubtargetInfo &STI) const;
+    /// getMachineOpValue - Return binary encoding of operand. If the machine
+    /// operand requires relocation, record the relocation and return zero.
+    unsigned getMachineOpValue(const MCInst &MI, const MCOperand &MO,
+                               SmallVectorImpl<MCFixup> &Fixups,
+                               const MCSubtargetInfo &STI) const;
 
-  unsigned getMemSrcValue(const MCInst &MI, unsigned OpIdx,
-                          SmallVectorImpl<MCFixup> &Fixups,
-                          const MCSubtargetInfo &STI) const;
+    unsigned getMemSrcValue(const MCInst &MI, unsigned OpIdx,
+                            SmallVectorImpl<MCFixup> &Fixups,
+                            const MCSubtargetInfo &STI) const;
 
-  void EmitByte(unsigned char C, raw_ostream &OS) const { OS << (char)C; }
-
-  void EmitConstant(uint64_t Val, unsigned Size, raw_ostream &OS) const {
-    // Output the constant in little endian byte order.
-    for (unsigned i = 0; i != Size; ++i) {
-      EmitByte(Val & 255, OS);
-      Val >>= 8;
+    void EmitByte(unsigned char C, raw_ostream &OS) const { 
+        OS << (char)C; 
     }
-  }
+
+    void EmitConstant(uint64_t Val, unsigned Size, raw_ostream &OS) const {
+        /// Output the constant in BIG endian byte order.
+        for (unsigned i = 0; i != Size; ++i) {
+            unsigned Shift = (Size - 1 - i) * 8;
+            EmitByte((Val >> Shift) & 0xff, OS);
+        }
+    }
   
-  void encodeInstruction(const MCInst &MI, raw_ostream &OS,
-                         SmallVectorImpl<MCFixup> &Fixups,
-                         const MCSubtargetInfo &STI) const override;
+    void encodeInstruction(const MCInst &MI, raw_ostream &OS,
+                           SmallVectorImpl<MCFixup> &Fixups,
+                           const MCSubtargetInfo &STI) const override;
 };
+} // end of anonymous namespace
 
-} // end anonymous namespace
-
-MCCodeEmitter *llvm::createFISCMCCodeEmitter(const MCInstrInfo &MCII,
-                                            const MCRegisterInfo &MRI,
-                                            MCContext &Ctx) 
-{
-  return new FISCMCCodeEmitter(MCII, Ctx);
+MCCodeEmitter *llvm::createFISCMCCodeEmitter(const MCInstrInfo &MCII, const MCRegisterInfo &MRI, MCContext &Ctx) {
+    return new FISCMCCodeEmitter(MCII, Ctx);
 }
 
 /// getMachineOpValue - Return binary encoding of operand. If the machine
 /// operand requires relocation, record the relocation and return zero.
 unsigned FISCMCCodeEmitter::getMachineOpValue(const MCInst &MI,
-                                             const MCOperand &MO,
-                                             SmallVectorImpl<MCFixup> &Fixups,
-                                             const MCSubtargetInfo &STI) const 
+                                              const MCOperand &MO,
+                                              SmallVectorImpl<MCFixup> &Fixups,
+                                              const MCSubtargetInfo &STI) const 
 {
-  if (MO.isReg())
-    return CTX.getRegisterInfo()->getEncodingValue(MO.getReg());
+    if (MO.isReg())
+        return CTX.getRegisterInfo()->getEncodingValue(MO.getReg());
 
-  if (MO.isImm())
-    return static_cast<unsigned>(MO.getImm());
+    if (MO.isImm())
+        return static_cast<unsigned>(MO.getImm());
 
-  assert(MO.isExpr() && "unknown operand kind in printOperand");
+    assert(MO.isExpr() && "unknown operand kind in printOperand");
 
-  const MCExpr *Expr = MO.getExpr();
-  MCExpr::ExprKind Kind = Expr->getKind();
+    const MCExpr *Expr = MO.getExpr();
+    MCExpr::ExprKind Kind = Expr->getKind();
+    
+    if (Kind == MCExpr::Binary) {
+        Expr = static_cast<const MCBinaryExpr*>(Expr)->getLHS();
+        Kind = Expr->getKind();
+    }
 
-  if (Kind == MCExpr::Binary) {
-    Expr = static_cast<const MCBinaryExpr*>(Expr)->getLHS();
-    Kind = Expr->getKind();
-  }
+    assert (Kind == MCExpr::SymbolRef);
 
-  assert (Kind == MCExpr::SymbolRef);
+    unsigned FixupKind;
+    switch (cast<MCSymbolRefExpr>(Expr)->getKind()) {
+    default:
+        llvm_unreachable("Unknown fixup kind!");
+    case MCSymbolRefExpr::VK_FISC_Q1:
+        FixupKind = FISC::fixup_fisc_mov_q1_pcrel;
+        break;
+    case MCSymbolRefExpr::VK_FISC_Q2:
+        FixupKind = FISC::fixup_fisc_mov_q2_pcrel;
+        break;
+    case MCSymbolRefExpr::VK_FISC_Q3:
+        FixupKind = FISC::fixup_fisc_mov_q3_pcrel;
+        break;
+    case MCSymbolRefExpr::VK_FISC_Q4:
+        FixupKind = FISC::fixup_fisc_mov_q4_pcrel;
+        break;
+    case MCSymbolRefExpr::VK_FISC_CALL26:
+        FixupKind = FISC::fixup_fisc_call26_pcrel;
+        break;
+    }
 
-  unsigned FixupKind;
-  switch (cast<MCSymbolRefExpr>(Expr)->getKind()) {
-  default:
-    llvm_unreachable("Unknown fixup kind!");
-  case MCSymbolRefExpr::VK_FISC_LO: {
-    FixupKind = FISC::fixup_FISC_mov_lo16_pcrel;
-    break;
-  }
-  case MCSymbolRefExpr::VK_FISC_HI: {
-    FixupKind = FISC::fixup_FISC_mov_hi16_pcrel;
-    break;
-  }
-  }
-
-  Fixups.push_back(MCFixup::create(0, MO.getExpr(), MCFixupKind(FixupKind)));
-  return 0;
+    Fixups.push_back(MCFixup::create(0, MO.getExpr(), MCFixupKind(FixupKind)));
+    return 0;
 }
 
 unsigned FISCMCCodeEmitter::getMemSrcValue(const MCInst &MI, unsigned OpIdx,
-                                          SmallVectorImpl<MCFixup> &Fixups,
-                                          const MCSubtargetInfo &STI) const 
+                                           SmallVectorImpl<MCFixup> &Fixups,
+                                           const MCSubtargetInfo &STI) const 
 {
-  unsigned Bits = 0;
-  const MCOperand &RegMO = MI.getOperand(OpIdx);
-  const MCOperand &ImmMO = MI.getOperand(OpIdx + 1);
-  assert(ImmMO.getImm() >= 0);
-  Bits |= (getMachineOpValue(MI, RegMO, Fixups, STI) << 12);
-  Bits |= (unsigned)ImmMO.getImm() & 0xfff;
-  return Bits;
+    unsigned Bits = 0;
+    const MCOperand &RegMO = MI.getOperand(OpIdx);
+    const MCOperand &ImmMO = MI.getOperand(OpIdx + 1);
+    assert(ImmMO.getImm() >= 0);
+    Bits |= (getMachineOpValue(MI, RegMO, Fixups, STI) << 9);
+    Bits |= (unsigned)ImmMO.getImm() & 0x1ff;
+    return Bits;
 }
 
 void FISCMCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,
-                                         SmallVectorImpl<MCFixup> &Fixups,
-                                         const MCSubtargetInfo &STI) const 
+                                          SmallVectorImpl<MCFixup> &Fixups,
+                                          const MCSubtargetInfo &STI) const 
 {
-  const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
-  if (Desc.getSize() != 4) {
-    llvm_unreachable("Unexpected instruction size!");
-  }
+    const MCInstrDesc &Desc = MCII.get(MI.getOpcode());
+    if (Desc.getSize() != 4) {
+        llvm_unreachable("Unexpected instruction size!");
+    }
 
-  const uint32_t Binary = getBinaryCodeForInstr(MI, Fixups, STI);
-
-  EmitConstant(Binary, Desc.getSize(), OS);
-  ++MCNumEmitted;
+    const uint32_t Binary = getBinaryCodeForInstr(MI, Fixups, STI);
+    EmitConstant(Binary, Desc.getSize(), OS);
+    
+    ++MCNumEmitted;
 }
 
 #include "FISCGenMCCodeEmitter.inc"

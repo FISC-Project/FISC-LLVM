@@ -13,7 +13,7 @@
 
 class FISCReg<bits<16> Enc, string n> : Register<n> {
     let HWEncoding = Enc;
-    let Namespace = "FISC";
+    let Namespace  = "FISC";
 }
 
 // CPU registers

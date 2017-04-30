@@ -34,11 +34,11 @@ typedef DenseMap<const MCSection *, uint64_t> SectionAddrMap;
 class MCExpr {
 public:
   enum ExprKind {
-    Binary,    ///< Binary expressions.
-    Constant,  ///< Constant expressions.
-    SymbolRef, ///< References to labels and assigned expressions.
-    Unary,     ///< Unary expressions.
-    Target     ///< Target specific expression.
+	Binary,    ///< Binary expressions.
+	Constant,  ///< Constant expressions.
+	SymbolRef, ///< References to labels and assigned expressions.
+	Unary,     ///< Unary expressions.
+	Target     ///< Target specific expression.
   };
 
 private:
@@ -48,20 +48,20 @@ private:
   void operator=(const MCExpr&) = delete;
 
   bool evaluateAsAbsolute(int64_t &Res, const MCAssembler *Asm,
-                          const MCAsmLayout *Layout,
-                          const SectionAddrMap *Addrs) const;
+						  const MCAsmLayout *Layout,
+						  const SectionAddrMap *Addrs) const;
 
   bool evaluateAsAbsolute(int64_t &Res, const MCAssembler *Asm,
-                          const MCAsmLayout *Layout,
-                          const SectionAddrMap *Addrs, bool InSet) const;
+						  const MCAsmLayout *Layout,
+						  const SectionAddrMap *Addrs, bool InSet) const;
 
 protected:
   explicit MCExpr(ExprKind Kind) : Kind(Kind) {}
 
   bool evaluateAsRelocatableImpl(MCValue &Res, const MCAssembler *Asm,
-                                 const MCAsmLayout *Layout,
-                                 const MCFixup *Fixup,
-                                 const SectionAddrMap *Addrs, bool InSet) const;
+								 const MCAsmLayout *Layout,
+								 const MCFixup *Fixup,
+								 const SectionAddrMap *Addrs, bool InSet) const;
 
 public:
   /// \name Accessors
@@ -88,7 +88,7 @@ public:
   /// evaluated.
   /// \return - True on success.
   bool evaluateAsAbsolute(int64_t &Res, const MCAsmLayout &Layout,
-                          const SectionAddrMap &Addrs) const;
+						  const SectionAddrMap &Addrs) const;
   bool evaluateAsAbsolute(int64_t &Res) const;
   bool evaluateAsAbsolute(int64_t &Res, const MCAssembler &Asm) const;
   bool evaluateAsAbsolute(int64_t &Res, const MCAsmLayout &Layout) const;
@@ -103,7 +103,7 @@ public:
   /// \param Fixup - The Fixup object if available.
   /// \return - True on success.
   bool evaluateAsRelocatable(MCValue &Res, const MCAsmLayout *Layout,
-                             const MCFixup *Fixup) const;
+							 const MCFixup *Fixup) const;
 
   /// \brief Try to evaluate the expression to the form (a - b + constant) where
   /// neither a nor b are variables.
@@ -131,7 +131,7 @@ class MCConstantExpr : public MCExpr {
   int64_t Value;
 
   explicit MCConstantExpr(int64_t Value)
-      : MCExpr(MCExpr::Constant), Value(Value) {}
+	  : MCExpr(MCExpr::Constant), Value(Value) {}
 
 public:
   /// \name Construction
@@ -148,7 +148,7 @@ public:
   /// @}
 
   static bool classof(const MCExpr *E) {
-    return E->getKind() == MCExpr::Constant;
+	return E->getKind() == MCExpr::Constant;
   }
 };
 
@@ -160,149 +160,150 @@ public:
 class MCSymbolRefExpr : public MCExpr {
 public:
   enum VariantKind : uint16_t {
-    VK_None,
-    VK_Invalid,
+	VK_None,
+	VK_Invalid,
 
-    VK_GOT,
-    VK_GOTOFF,
-    VK_GOTPCREL,
-    VK_GOTTPOFF,
-    VK_INDNTPOFF,
-    VK_NTPOFF,
-    VK_GOTNTPOFF,
-    VK_PLT,
-    VK_TLSGD,
-    VK_TLSLD,
-    VK_TLSLDM,
-    VK_TPOFF,
-    VK_DTPOFF,
-    VK_TLVP,      // Mach-O thread local variable relocations
-    VK_TLVPPAGE,
-    VK_TLVPPAGEOFF,
-    VK_PAGE,
-    VK_PAGEOFF,
-    VK_GOTPAGE,
-    VK_GOTPAGEOFF,
-    VK_SECREL,
-    VK_SIZE,      // symbol@SIZE
-    VK_WEAKREF,   // The link between the symbols in .weakref foo, bar
+	VK_GOT,
+	VK_GOTOFF,
+	VK_GOTPCREL,
+	VK_GOTTPOFF,
+	VK_INDNTPOFF,
+	VK_NTPOFF,
+	VK_GOTNTPOFF,
+	VK_PLT,
+	VK_TLSGD,
+	VK_TLSLD,
+	VK_TLSLDM,
+	VK_TPOFF,
+	VK_DTPOFF,
+	VK_TLVP,      // Mach-O thread local variable relocations
+	VK_TLVPPAGE,
+	VK_TLVPPAGEOFF,
+	VK_PAGE,
+	VK_PAGEOFF,
+	VK_GOTPAGE,
+	VK_GOTPAGEOFF,
+	VK_SECREL,
+	VK_SIZE,      // symbol@SIZE
+	VK_WEAKREF,   // The link between the symbols in .weakref foo, bar
 
-    VK_ARM_NONE,
-    VK_ARM_GOT_PREL,
-    VK_ARM_TARGET1,
-    VK_ARM_TARGET2,
-    VK_ARM_PREL31,
-    VK_ARM_SBREL,          // symbol(sbrel)
-    VK_ARM_TLSLDO,         // symbol(tlsldo)
-    VK_ARM_TLSCALL,        // symbol(tlscall)
-    VK_ARM_TLSDESC,        // symbol(tlsdesc)
-    VK_ARM_TLSDESCSEQ,
+	VK_ARM_NONE,
+	VK_ARM_GOT_PREL,
+	VK_ARM_TARGET1,
+	VK_ARM_TARGET2,
+	VK_ARM_PREL31,
+	VK_ARM_SBREL,          // symbol(sbrel)
+	VK_ARM_TLSLDO,         // symbol(tlsldo)
+	VK_ARM_TLSCALL,        // symbol(tlscall)
+	VK_ARM_TLSDESC,        // symbol(tlsdesc)
+	VK_ARM_TLSDESCSEQ,
 
-    VK_PPC_LO,             // symbol@l
-    VK_PPC_HI,             // symbol@h
-    VK_PPC_HA,             // symbol@ha
-    VK_PPC_HIGHER,         // symbol@higher
-    VK_PPC_HIGHERA,        // symbol@highera
-    VK_PPC_HIGHEST,        // symbol@highest
-    VK_PPC_HIGHESTA,       // symbol@highesta
-    VK_PPC_GOT_LO,         // symbol@got@l
-    VK_PPC_GOT_HI,         // symbol@got@h
-    VK_PPC_GOT_HA,         // symbol@got@ha
-    VK_PPC_TOCBASE,        // symbol@tocbase
-    VK_PPC_TOC,            // symbol@toc
-    VK_PPC_TOC_LO,         // symbol@toc@l
-    VK_PPC_TOC_HI,         // symbol@toc@h
-    VK_PPC_TOC_HA,         // symbol@toc@ha
-    VK_PPC_DTPMOD,         // symbol@dtpmod
-    VK_PPC_TPREL,          // symbol@tprel
-    VK_PPC_TPREL_LO,       // symbol@tprel@l
-    VK_PPC_TPREL_HI,       // symbol@tprel@h
-    VK_PPC_TPREL_HA,       // symbol@tprel@ha
-    VK_PPC_TPREL_HIGHER,   // symbol@tprel@higher
-    VK_PPC_TPREL_HIGHERA,  // symbol@tprel@highera
-    VK_PPC_TPREL_HIGHEST,  // symbol@tprel@highest
-    VK_PPC_TPREL_HIGHESTA, // symbol@tprel@highesta
-    VK_PPC_DTPREL,         // symbol@dtprel
-    VK_PPC_DTPREL_LO,      // symbol@dtprel@l
-    VK_PPC_DTPREL_HI,      // symbol@dtprel@h
-    VK_PPC_DTPREL_HA,      // symbol@dtprel@ha
-    VK_PPC_DTPREL_HIGHER,  // symbol@dtprel@higher
-    VK_PPC_DTPREL_HIGHERA, // symbol@dtprel@highera
-    VK_PPC_DTPREL_HIGHEST, // symbol@dtprel@highest
-    VK_PPC_DTPREL_HIGHESTA,// symbol@dtprel@highesta
-    VK_PPC_GOT_TPREL,      // symbol@got@tprel
-    VK_PPC_GOT_TPREL_LO,   // symbol@got@tprel@l
-    VK_PPC_GOT_TPREL_HI,   // symbol@got@tprel@h
-    VK_PPC_GOT_TPREL_HA,   // symbol@got@tprel@ha
-    VK_PPC_GOT_DTPREL,     // symbol@got@dtprel
-    VK_PPC_GOT_DTPREL_LO,  // symbol@got@dtprel@l
-    VK_PPC_GOT_DTPREL_HI,  // symbol@got@dtprel@h
-    VK_PPC_GOT_DTPREL_HA,  // symbol@got@dtprel@ha
-    VK_PPC_TLS,            // symbol@tls
-    VK_PPC_GOT_TLSGD,      // symbol@got@tlsgd
-    VK_PPC_GOT_TLSGD_LO,   // symbol@got@tlsgd@l
-    VK_PPC_GOT_TLSGD_HI,   // symbol@got@tlsgd@h
-    VK_PPC_GOT_TLSGD_HA,   // symbol@got@tlsgd@ha
-    VK_PPC_TLSGD,          // symbol@tlsgd
-    VK_PPC_GOT_TLSLD,      // symbol@got@tlsld
-    VK_PPC_GOT_TLSLD_LO,   // symbol@got@tlsld@l
-    VK_PPC_GOT_TLSLD_HI,   // symbol@got@tlsld@h
-    VK_PPC_GOT_TLSLD_HA,   // symbol@got@tlsld@ha
-    VK_PPC_TLSLD,          // symbol@tlsld
-    VK_PPC_LOCAL,          // symbol@local
+	VK_PPC_LO,             // symbol@l
+	VK_PPC_HI,             // symbol@h
+	VK_PPC_HA,             // symbol@ha
+	VK_PPC_HIGHER,         // symbol@higher
+	VK_PPC_HIGHERA,        // symbol@highera
+	VK_PPC_HIGHEST,        // symbol@highest
+	VK_PPC_HIGHESTA,       // symbol@highesta
+	VK_PPC_GOT_LO,         // symbol@got@l
+	VK_PPC_GOT_HI,         // symbol@got@h
+	VK_PPC_GOT_HA,         // symbol@got@ha
+	VK_PPC_TOCBASE,        // symbol@tocbase
+	VK_PPC_TOC,            // symbol@toc
+	VK_PPC_TOC_LO,         // symbol@toc@l
+	VK_PPC_TOC_HI,         // symbol@toc@h
+	VK_PPC_TOC_HA,         // symbol@toc@ha
+	VK_PPC_DTPMOD,         // symbol@dtpmod
+	VK_PPC_TPREL,          // symbol@tprel
+	VK_PPC_TPREL_LO,       // symbol@tprel@l
+	VK_PPC_TPREL_HI,       // symbol@tprel@h
+	VK_PPC_TPREL_HA,       // symbol@tprel@ha
+	VK_PPC_TPREL_HIGHER,   // symbol@tprel@higher
+	VK_PPC_TPREL_HIGHERA,  // symbol@tprel@highera
+	VK_PPC_TPREL_HIGHEST,  // symbol@tprel@highest
+	VK_PPC_TPREL_HIGHESTA, // symbol@tprel@highesta
+	VK_PPC_DTPREL,         // symbol@dtprel
+	VK_PPC_DTPREL_LO,      // symbol@dtprel@l
+	VK_PPC_DTPREL_HI,      // symbol@dtprel@h
+	VK_PPC_DTPREL_HA,      // symbol@dtprel@ha
+	VK_PPC_DTPREL_HIGHER,  // symbol@dtprel@higher
+	VK_PPC_DTPREL_HIGHERA, // symbol@dtprel@highera
+	VK_PPC_DTPREL_HIGHEST, // symbol@dtprel@highest
+	VK_PPC_DTPREL_HIGHESTA,// symbol@dtprel@highesta
+	VK_PPC_GOT_TPREL,      // symbol@got@tprel
+	VK_PPC_GOT_TPREL_LO,   // symbol@got@tprel@l
+	VK_PPC_GOT_TPREL_HI,   // symbol@got@tprel@h
+	VK_PPC_GOT_TPREL_HA,   // symbol@got@tprel@ha
+	VK_PPC_GOT_DTPREL,     // symbol@got@dtprel
+	VK_PPC_GOT_DTPREL_LO,  // symbol@got@dtprel@l
+	VK_PPC_GOT_DTPREL_HI,  // symbol@got@dtprel@h
+	VK_PPC_GOT_DTPREL_HA,  // symbol@got@dtprel@ha
+	VK_PPC_TLS,            // symbol@tls
+	VK_PPC_GOT_TLSGD,      // symbol@got@tlsgd
+	VK_PPC_GOT_TLSGD_LO,   // symbol@got@tlsgd@l
+	VK_PPC_GOT_TLSGD_HI,   // symbol@got@tlsgd@h
+	VK_PPC_GOT_TLSGD_HA,   // symbol@got@tlsgd@ha
+	VK_PPC_TLSGD,          // symbol@tlsgd
+	VK_PPC_GOT_TLSLD,      // symbol@got@tlsld
+	VK_PPC_GOT_TLSLD_LO,   // symbol@got@tlsld@l
+	VK_PPC_GOT_TLSLD_HI,   // symbol@got@tlsld@h
+	VK_PPC_GOT_TLSLD_HA,   // symbol@got@tlsld@ha
+	VK_PPC_TLSLD,          // symbol@tlsld
+	VK_PPC_LOCAL,          // symbol@local
 
-    VK_Mips_GPREL,
-    VK_Mips_GOT_CALL,
-    VK_Mips_GOT16,
-    VK_Mips_GOT,
-    VK_Mips_ABS_HI,
-    VK_Mips_ABS_LO,
-    VK_Mips_TLSGD,
-    VK_Mips_TLSLDM,
-    VK_Mips_DTPREL_HI,
-    VK_Mips_DTPREL_LO,
-    VK_Mips_GOTTPREL,
-    VK_Mips_TPREL_HI,
-    VK_Mips_TPREL_LO,
-    VK_Mips_GPOFF_HI,
-    VK_Mips_GPOFF_LO,
-    VK_Mips_GOT_DISP,
-    VK_Mips_GOT_PAGE,
-    VK_Mips_GOT_OFST,
-    VK_Mips_HIGHER,
-    VK_Mips_HIGHEST,
-    VK_Mips_GOT_HI16,
-    VK_Mips_GOT_LO16,
-    VK_Mips_CALL_HI16,
-    VK_Mips_CALL_LO16,
-    VK_Mips_PCREL_HI16,
-    VK_Mips_PCREL_LO16,
-    
-    VK_LEG_LO,
-    VK_LEG_HI,
+	VK_Mips_GPREL,
+	VK_Mips_GOT_CALL,
+	VK_Mips_GOT16,
+	VK_Mips_GOT,
+	VK_Mips_ABS_HI,
+	VK_Mips_ABS_LO,
+	VK_Mips_TLSGD,
+	VK_Mips_TLSLDM,
+	VK_Mips_DTPREL_HI,
+	VK_Mips_DTPREL_LO,
+	VK_Mips_GOTTPREL,
+	VK_Mips_TPREL_HI,
+	VK_Mips_TPREL_LO,
+	VK_Mips_GPOFF_HI,
+	VK_Mips_GPOFF_LO,
+	VK_Mips_GOT_DISP,
+	VK_Mips_GOT_PAGE,
+	VK_Mips_GOT_OFST,
+	VK_Mips_HIGHER,
+	VK_Mips_HIGHEST,
+	VK_Mips_GOT_HI16,
+	VK_Mips_GOT_LO16,
+	VK_Mips_CALL_HI16,
+	VK_Mips_CALL_LO16,
+	VK_Mips_PCREL_HI16,
+	VK_Mips_PCREL_LO16,
+	
+	VK_LEG_LO,
+	VK_LEG_HI,
 
-    VK_FISC_Q1,
-    VK_FISC_Q2,
-    VK_FISC_Q3,
-    VK_FISC_Q4,
+	VK_FISC_Q1,
+	VK_FISC_Q2,
+	VK_FISC_Q3,
+	VK_FISC_Q4,
+	VK_FISC_CALL26,
 
-    VK_COFF_IMGREL32, // symbol@imgrel (image-relative)
+	VK_COFF_IMGREL32, // symbol@imgrel (image-relative)
 
-    VK_Hexagon_PCREL,
-    VK_Hexagon_LO16,
-    VK_Hexagon_HI16,
-    VK_Hexagon_GPREL,
-    VK_Hexagon_GD_GOT,
-    VK_Hexagon_LD_GOT,
-    VK_Hexagon_GD_PLT,
-    VK_Hexagon_LD_PLT,
-    VK_Hexagon_IE,
-    VK_Hexagon_IE_GOT,
+	VK_Hexagon_PCREL,
+	VK_Hexagon_LO16,
+	VK_Hexagon_HI16,
+	VK_Hexagon_GPREL,
+	VK_Hexagon_GD_GOT,
+	VK_Hexagon_LD_GOT,
+	VK_Hexagon_GD_PLT,
+	VK_Hexagon_LD_PLT,
+	VK_Hexagon_IE,
+	VK_Hexagon_IE_GOT,
 
-    VK_WebAssembly_FUNCTION, // Function table index, rather than virtual addr
+	VK_WebAssembly_FUNCTION, // Function table index, rather than virtual addr
 
-    VK_TPREL,
-    VK_DTPREL
+	VK_TPREL,
+	VK_DTPREL
   };
 
 private:
@@ -319,20 +320,20 @@ private:
   const MCSymbol *Symbol;
 
   explicit MCSymbolRefExpr(const MCSymbol *Symbol, VariantKind Kind,
-                           const MCAsmInfo *MAI);
+						   const MCAsmInfo *MAI);
 
 public:
   /// \name Construction
   /// @{
 
   static const MCSymbolRefExpr *create(const MCSymbol *Symbol, MCContext &Ctx) {
-    return MCSymbolRefExpr::create(Symbol, VK_None, Ctx);
+	return MCSymbolRefExpr::create(Symbol, VK_None, Ctx);
   }
 
   static const MCSymbolRefExpr *create(const MCSymbol *Symbol, VariantKind Kind,
-                                       MCContext &Ctx);
+									   MCContext &Ctx);
   static const MCSymbolRefExpr *create(StringRef Name, VariantKind Kind,
-                                       MCContext &Ctx);
+									   MCContext &Ctx);
 
   /// @}
   /// \name Accessors
@@ -357,7 +358,7 @@ public:
   /// @}
 
   static bool classof(const MCExpr *E) {
-    return E->getKind() == MCExpr::SymbolRef;
+	return E->getKind() == MCExpr::SymbolRef;
   }
 };
 
@@ -365,10 +366,10 @@ public:
 class MCUnaryExpr : public MCExpr {
 public:
   enum Opcode {
-    LNot,  ///< Logical negation.
-    Minus, ///< Unary minus.
-    Not,   ///< Bitwise negation.
-    Plus   ///< Unary plus.
+	LNot,  ///< Logical negation.
+	Minus, ///< Unary minus.
+	Not,   ///< Bitwise negation.
+	Plus   ///< Unary plus.
   };
 
 private:
@@ -376,25 +377,25 @@ private:
   const MCExpr *Expr;
 
   MCUnaryExpr(Opcode Op, const MCExpr *Expr)
-      : MCExpr(MCExpr::Unary), Op(Op), Expr(Expr) {}
+	  : MCExpr(MCExpr::Unary), Op(Op), Expr(Expr) {}
 
 public:
   /// \name Construction
   /// @{
 
   static const MCUnaryExpr *create(Opcode Op, const MCExpr *Expr,
-                                   MCContext &Ctx);
+								   MCContext &Ctx);
   static const MCUnaryExpr *createLNot(const MCExpr *Expr, MCContext &Ctx) {
-    return create(LNot, Expr, Ctx);
+	return create(LNot, Expr, Ctx);
   }
   static const MCUnaryExpr *createMinus(const MCExpr *Expr, MCContext &Ctx) {
-    return create(Minus, Expr, Ctx);
+	return create(Minus, Expr, Ctx);
   }
   static const MCUnaryExpr *createNot(const MCExpr *Expr, MCContext &Ctx) {
-    return create(Not, Expr, Ctx);
+	return create(Not, Expr, Ctx);
   }
   static const MCUnaryExpr *createPlus(const MCExpr *Expr, MCContext &Ctx) {
-    return create(Plus, Expr, Ctx);
+	return create(Plus, Expr, Ctx);
   }
 
   /// @}
@@ -410,7 +411,7 @@ public:
   /// @}
 
   static bool classof(const MCExpr *E) {
-    return E->getKind() == MCExpr::Unary;
+	return E->getKind() == MCExpr::Unary;
   }
 };
 
@@ -418,29 +419,29 @@ public:
 class MCBinaryExpr : public MCExpr {
 public:
   enum Opcode {
-    Add,  ///< Addition.
-    And,  ///< Bitwise and.
-    Div,  ///< Signed division.
-    EQ,   ///< Equality comparison.
-    GT,   ///< Signed greater than comparison (result is either 0 or some
-          ///< target-specific non-zero value)
-    GTE,  ///< Signed greater than or equal comparison (result is either 0 or
-          ///< some target-specific non-zero value).
-    LAnd, ///< Logical and.
-    LOr,  ///< Logical or.
-    LT,   ///< Signed less than comparison (result is either 0 or
-          ///< some target-specific non-zero value).
-    LTE,  ///< Signed less than or equal comparison (result is either 0 or
-          ///< some target-specific non-zero value).
-    Mod,  ///< Signed remainder.
-    Mul,  ///< Multiplication.
-    NE,   ///< Inequality comparison.
-    Or,   ///< Bitwise or.
-    Shl,  ///< Shift left.
-    AShr, ///< Arithmetic shift right.
-    LShr, ///< Logical shift right.
-    Sub,  ///< Subtraction.
-    Xor   ///< Bitwise exclusive or.
+	Add,  ///< Addition.
+	And,  ///< Bitwise and.
+	Div,  ///< Signed division.
+	EQ,   ///< Equality comparison.
+	GT,   ///< Signed greater than comparison (result is either 0 or some
+		  ///< target-specific non-zero value)
+	GTE,  ///< Signed greater than or equal comparison (result is either 0 or
+		  ///< some target-specific non-zero value).
+	LAnd, ///< Logical and.
+	LOr,  ///< Logical or.
+	LT,   ///< Signed less than comparison (result is either 0 or
+		  ///< some target-specific non-zero value).
+	LTE,  ///< Signed less than or equal comparison (result is either 0 or
+		  ///< some target-specific non-zero value).
+	Mod,  ///< Signed remainder.
+	Mul,  ///< Multiplication.
+	NE,   ///< Inequality comparison.
+	Or,   ///< Bitwise or.
+	Shl,  ///< Shift left.
+	AShr, ///< Arithmetic shift right.
+	LShr, ///< Logical shift right.
+	Sub,  ///< Subtraction.
+	Xor   ///< Bitwise exclusive or.
   };
 
 private:
@@ -448,89 +449,89 @@ private:
   const MCExpr *LHS, *RHS;
 
   MCBinaryExpr(Opcode Op, const MCExpr *LHS, const MCExpr *RHS)
-      : MCExpr(MCExpr::Binary), Op(Op), LHS(LHS), RHS(RHS) {}
+	  : MCExpr(MCExpr::Binary), Op(Op), LHS(LHS), RHS(RHS) {}
 
 public:
   /// \name Construction
   /// @{
 
   static const MCBinaryExpr *create(Opcode Op, const MCExpr *LHS,
-                                    const MCExpr *RHS, MCContext &Ctx);
+									const MCExpr *RHS, MCContext &Ctx);
   static const MCBinaryExpr *createAdd(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(Add, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(Add, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createAnd(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(And, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(And, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createDiv(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(Div, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(Div, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createEQ(const MCExpr *LHS, const MCExpr *RHS,
-                                      MCContext &Ctx) {
-    return create(EQ, LHS, RHS, Ctx);
+									  MCContext &Ctx) {
+	return create(EQ, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createGT(const MCExpr *LHS, const MCExpr *RHS,
-                                      MCContext &Ctx) {
-    return create(GT, LHS, RHS, Ctx);
+									  MCContext &Ctx) {
+	return create(GT, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createGTE(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(GTE, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(GTE, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createLAnd(const MCExpr *LHS, const MCExpr *RHS,
-                                        MCContext &Ctx) {
-    return create(LAnd, LHS, RHS, Ctx);
+										MCContext &Ctx) {
+	return create(LAnd, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createLOr(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(LOr, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(LOr, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createLT(const MCExpr *LHS, const MCExpr *RHS,
-                                      MCContext &Ctx) {
-    return create(LT, LHS, RHS, Ctx);
+									  MCContext &Ctx) {
+	return create(LT, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createLTE(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(LTE, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(LTE, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createMod(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(Mod, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(Mod, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createMul(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(Mul, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(Mul, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createNE(const MCExpr *LHS, const MCExpr *RHS,
-                                      MCContext &Ctx) {
-    return create(NE, LHS, RHS, Ctx);
+									  MCContext &Ctx) {
+	return create(NE, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createOr(const MCExpr *LHS, const MCExpr *RHS,
-                                      MCContext &Ctx) {
-    return create(Or, LHS, RHS, Ctx);
+									  MCContext &Ctx) {
+	return create(Or, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createShl(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(Shl, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(Shl, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createAShr(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(AShr, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(AShr, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createLShr(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(LShr, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(LShr, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createSub(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(Sub, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(Sub, LHS, RHS, Ctx);
   }
   static const MCBinaryExpr *createXor(const MCExpr *LHS, const MCExpr *RHS,
-                                       MCContext &Ctx) {
-    return create(Xor, LHS, RHS, Ctx);
+									   MCContext &Ctx) {
+	return create(Xor, LHS, RHS, Ctx);
   }
 
   /// @}
@@ -549,7 +550,7 @@ public:
   /// @}
 
   static bool classof(const MCExpr *E) {
-    return E->getKind() == MCExpr::Binary;
+	return E->getKind() == MCExpr::Binary;
   }
 };
 
@@ -566,15 +567,15 @@ protected:
 public:
   virtual void printImpl(raw_ostream &OS, const MCAsmInfo *MAI) const = 0;
   virtual bool evaluateAsRelocatableImpl(MCValue &Res,
-                                         const MCAsmLayout *Layout,
-                                         const MCFixup *Fixup) const = 0;
+										 const MCAsmLayout *Layout,
+										 const MCFixup *Fixup) const = 0;
   virtual void visitUsedExpr(MCStreamer& Streamer) const = 0;
   virtual MCFragment *findAssociatedFragment() const = 0;
 
   virtual void fixELFSymbolsInTLSFixups(MCAssembler &) const = 0;
 
   static bool classof(const MCExpr *E) {
-    return E->getKind() == MCExpr::Target;
+	return E->getKind() == MCExpr::Target;
   }
 };
 

@@ -112,8 +112,8 @@ def MOVrr  : ALUIInst<0b1001000100, (outs GRRegs:$dst), (ins GRRegs:$src),
 // Mov Immediate Instructions
 //===----------------------------------------------------------------------===//
 
-class MOV<bits<9> opcode, string opstr>
-    : IWInst<opcode, (outs GRRegs:$dst), (ins i64imm:$imm, i64imm:$lsl),
+class MOV<bits<9> opcode, string opstr, dag ins>
+    : IWInst<opcode, (outs GRRegs:$dst), ins,
             !strconcat(opstr, " $dst, $imm, $lsl"), []> 
 {
     bits<5>  dst;
@@ -124,11 +124,11 @@ class MOV<bits<9> opcode, string opstr>
     let Inst{4-0}   = dst;
 }
 
-def MOVK : MOV<0b111100101, "movk">;
-def MOVZ : MOV<0b110100101, "movz">;
+def MOVK : MOV<0b111100101, "movk",(ins i64imm:$imm, i64imm:$lsl, i64imm:$ign)>;
+def MOVZ : MOV<0b110100101, "movz",(ins i64imm:$imm, i64imm:$lsl)>;
 
 def MOVi64 : InstFISC<(outs GRRegs:$dst), (ins i64imm:$src), "",
-                     [(set i64:$dst, (movei64 imm:$src))]> 
+                      [(set i64:$dst, (movei64 imm:$src))]> 
 {
     let isPseudo = 1;
 }
@@ -155,14 +155,14 @@ def CMP : InstFISC<(outs), (ins GRRegs:$lhs, GRRegs:$rhs),
 
 def LDR  : InstFISC<(outs GRRegs:$val), (ins memsrc:$addr),
                    "ldr $val, $addr",
-                   [(set i64:$val, (load addr:$addr))]> 
+                   [(set i64:$val, (load addr:$addr))]>
 {
     bits<5>  val;
     bits<14> addr;
     let Inst{31-21} = 0b11111000010;
-    let Inst{20-12} = addr{13-5};
+    let Inst{20-12} = addr{8-0};
     let Inst{11-10} = 0b00;
-    let Inst{9-5}   = addr{4-0};
+    let Inst{9-5}   = addr{13-9};
     let Inst{4-0}   = val;
 }
 
@@ -170,12 +170,12 @@ def STR : InstFISC<(outs), (ins GRRegs:$val, memsrc:$addr),
                   "str $val, $addr",
                   [(store i64:$val, addr:$addr)]> 
 {
-    bits<17> addr;
+    bits<14> addr;
     bits<5>  val;
     let Inst{31-21} = 0b11111000000;
-    let Inst{20-12} = addr{13-5};
+    let Inst{20-12} = addr{8-0};
     let Inst{11-10} = 0b00;
-    let Inst{9-5}   = addr{4-0};
+    let Inst{9-5}   = addr{13-9};
     let Inst{4-0}   = val;
 }
 
@@ -197,16 +197,15 @@ let isTerminator = 1, isReturn = 1, isBarrier = 1, Uses = [LR] in
 
 let isCall = 1, Defs = [LR], Uses = [SP] in 
 {
-    def BL : UncondBranchInst<0b100101, (outs), (ins i64imm:$addr),
-                              "bl $addr",
-                              [(fisc_call imm:$addr)]>
+    def BL : UncondBranchInst<0b100101, (outs), (ins calltarget:$addr), "bl $addr", []>
     {
         bits<26> addr;
         let Inst{25-0} = addr;
     }
 }
 
-def : Pattern<(i64 (load_sym tglobaladdr:$addr)), [(MOVi64 $addr)]>;
+def : Pat<(fisc_call i64:$dst), (BL tglobaladdr:$dst)>;
+//FIXME def : Pattern<(i64 (load_sym tglobaladdr:$addr)), [(MOVi64 $addr)]>;
 
 //===----------------------------------------------------------------------===//
 // Branch Instructions

@@ -53,8 +53,11 @@ public:
             /// FISCFixupKinds.h.
             ///
             /// Name                      Offset (bits) Size (bits)     Flags
-            { "fixup_FISC_mov_hi16_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
-            { "fixup_FISC_mov_lo16_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
+            { "fixup_fisc_mov_q1_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
+            { "fixup_fisc_mov_q2_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
+            { "fixup_fisc_mov_q3_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
+            { "fixup_fisc_mov_q4_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
+            { "fixup_fisc_call26_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
         };
 
         if (Kind < FirstTargetFixupKind)
@@ -88,7 +91,8 @@ public:
         // Do nothing
     }
 
-    bool writeNopData(uint64_t Count, MCObjectWriter *OW) const override {
+    bool writeNopData(uint64_t Count, MCObjectWriter *OW) const override 
+    {
         if (Count == 0)
             return true;
         return false;
@@ -101,20 +105,19 @@ public:
 } // end of anonymous namespace
 
 static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value, MCContext *Ctx = NULL) {
-    unsigned Kind = Fixup.getKind();
-    switch (Kind) {
+    switch ((unsigned)Fixup.getKind()) {
     default:
         llvm_unreachable("Unknown fixup kind!");
-    case FISC::fixup_FISC_mov_hi16_pcrel:
-        Value >>= 16;
-        // Intentional fall-through
-    case FISC::fixup_FISC_mov_lo16_pcrel:
-        unsigned Hi4  = (Value & 0xF000) >> 12;
-        unsigned Lo12 = Value & 0x0FFF;
-        // inst{19-16} = Hi4;
-        // inst{11-0} = Lo12;
-        Value = (Hi4 << 16) | (Lo12);
-        return Value;
+    case FISC::fixup_fisc_mov_q4_pcrel:
+        return (Value >>= 48) & 0xFFFF;
+    case FISC::fixup_fisc_mov_q3_pcrel:
+        return (Value >>= 32) & 0xFFFF;
+    case FISC::fixup_fisc_mov_q2_pcrel:
+        return (Value >>= 16) & 0xFFFF;
+    case FISC::fixup_fisc_mov_q1_pcrel:
+        return Value & 0xFFFF;
+    case FISC::fixup_fisc_call26_pcrel:
+        return Value & 0x3FFFFFF;
     }
     return Value;
 }
@@ -138,8 +141,9 @@ void FISCAsmBackend::applyFixup(const MCFixup &Fixup, char *Data,
                                 unsigned DataSize, uint64_t Value,
                                 bool isPCRel) const 
 {
-    unsigned NumBytes = 8;
+    unsigned NumBytes = 4;
     Value = adjustFixupValue(Fixup, Value);
+ 
     if (!Value)
         return; /// Doesn't change encoding.
 
@@ -150,7 +154,7 @@ void FISCAsmBackend::applyFixup(const MCFixup &Fixup, char *Data,
     /// the fixup value. The Value has been "split up" into the appropriate
     /// bitfields above.
     for (unsigned i = 0; i != NumBytes; ++i)
-        Data[Offset + i] |= uint8_t((Value >> (i * 8)) & 0xff);
+        Data[Offset + i] |= uint8_t((Value >> ((NumBytes - i - 1) * 8)) & 0xff);
 }
 
 namespace {
