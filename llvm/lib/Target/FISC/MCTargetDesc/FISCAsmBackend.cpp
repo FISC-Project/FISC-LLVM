@@ -145,7 +145,12 @@ void FISCAsmBackend::applyFixup(const MCFixup &Fixup, char *Data,
                                 bool isPCRel) const 
 {
     unsigned NumBytes = 4;
+
+    printf("\n\nFIXUP: %d VAL BEFORE: %d", Fixup.getKind(), Value);
+
     Value = adjustFixupValue(Fixup, Value);
+
+    printf("\n\nVAL AFTER: %d", Value);
 
     if (!Value)
         return; /// Doesn't change encoding.
