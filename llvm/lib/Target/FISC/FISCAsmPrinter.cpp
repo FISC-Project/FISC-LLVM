@@ -8,11 +8,11 @@
 //===----------------------------------------------------------------------===//
 //
 // This file contains a printer that converts from our internal representation
-// of machine-dependent LLVM code to the XAS-format FISC assembly language.
+// of machine-dependent LLVM code to the GAS-format FISC assembly language.
 //
 //===----------------------------------------------------------------------===//
 
-#define DEBUG_TYPE "asm-printer"
+#define DEBUG_TYPE "fisc - asm-printer"
 
 #include "FISC.h"
 #include "InstPrinter/FISCInstPrinter.h"
@@ -56,7 +56,7 @@ public:
     explicit FISCAsmPrinter(TargetMachine &TM, std::unique_ptr<MCStreamer> Streamer)
         : AsmPrinter(TM, std::move(Streamer)), MCInstLowering(*this) {}
 
-    virtual const char *getPassName() const { 
+    virtual const char *getPassName() const {
         return "FISC Assembly Printer"; 
     }
 

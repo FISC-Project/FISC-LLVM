@@ -44,7 +44,6 @@ FISCInstrInfo::FISCInstrInfo()
 /// not, return 0.  This predicate must return 0 if the instruction has
 /// any side effects other than loading from the stack slot.
 unsigned FISCInstrInfo::isLoadFromStackSlot(const MachineInstr *MI, int &FrameIndex) const {
-    assert(0 && "Unimplemented");
     return 0;
 }
   
@@ -54,7 +53,6 @@ unsigned FISCInstrInfo::isLoadFromStackSlot(const MachineInstr *MI, int &FrameIn
   /// not, return 0.  This predicate must return 0 if the instruction has
   /// any side effects other than storing to the stack slot.
 unsigned FISCInstrInfo::isStoreToStackSlot(const MachineInstr *MI, int &FrameIndex) const {
-    assert(0 && "Unimplemented");
     return 0;
 }
 

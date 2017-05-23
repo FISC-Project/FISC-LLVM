@@ -55,6 +55,9 @@ unsigned FISCELFObjectWriter::GetRelocType(const MCValue &Target, const MCFixup 
     case FISC::fixup_fisc_call26_pcrel:
         Type = ELF::R_FISC_CALL26;
         break;
+    case FISC::fixup_fisc_call19_pcrel:
+        Type = ELF::R_FISC_CALL19;
+        break;
     }
     return Type;
 }

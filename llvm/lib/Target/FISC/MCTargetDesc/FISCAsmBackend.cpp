@@ -58,6 +58,7 @@ public:
             { "fixup_fisc_mov_q3_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
             { "fixup_fisc_mov_q4_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
             { "fixup_fisc_call26_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
+            { "fixup_fisc_call19_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
         };
 
         if (Kind < FirstTargetFixupKind)
@@ -118,6 +119,8 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value, MCContext
         return Value & 0xFFFF;
     case FISC::fixup_fisc_call26_pcrel:
         return Value & 0x3FFFFFF;
+    case FISC::fixup_fisc_call19_pcrel:
+        return (Value & 0x7FFFF) << 5;
     }
     return Value;
 }
@@ -143,7 +146,7 @@ void FISCAsmBackend::applyFixup(const MCFixup &Fixup, char *Data,
 {
     unsigned NumBytes = 4;
     Value = adjustFixupValue(Fixup, Value);
- 
+
     if (!Value)
         return; /// Doesn't change encoding.
 

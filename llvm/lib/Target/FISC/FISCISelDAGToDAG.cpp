@@ -13,6 +13,7 @@
 
 #include "FISC.h"
 #include "FISCTargetMachine.h"
+#include "MCTargetDesc/FISCBaseInfo.h"
 #include "llvm/CodeGen/SelectionDAGISel.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
@@ -57,38 +58,9 @@ private:
 };
 } // end of anonymous namespace
 
-bool FISCDAGToDAGISel::SelectAddr(SDValue Addr, SDValue &Base, SDValue &Offset) {
-    if (FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>(Addr)) {
-        EVT PtrVT = getTargetLowering()->getPointerTy(CurDAG->getDataLayout());
-        Base      = CurDAG->getTargetFrameIndex(FIN->getIndex(), PtrVT);
-        Offset    = CurDAG->getTargetConstant(0, Addr, MVT::i64);
-        return true;
-    }
-    if (Addr.getOpcode() == ISD::TargetExternalSymbol ||
-        Addr.getOpcode() == ISD::TargetGlobalAddress  ||
-        Addr.getOpcode() == ISD::TargetGlobalTLSAddress) 
-    {
-        return false; /// direct calls.
-    }
-
-    Base   = Addr;
-    Offset = CurDAG->getTargetConstant(0, Addr, MVT::i64);
-    return true;
-}
-
-SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
-    // TODO: If the load is 32 bits, select LDRW, if 16 bits, select LDRH, if 8, LDRB
-    LoadSDNode *LDNode = cast<LoadSDNode>(N);
-    FrameIndexSDNode *FIN =	dyn_cast<FrameIndexSDNode>(N->getOperand(1));
-    SDValue Base   = CurDAG->getTargetFrameIndex(FIN->getIndex(), MVT::i64);
-    SDValue Offset = CurDAG->getTargetConstant(0, LDNode, MVT::i64);
-    SDValue ops[]  = { Base, Offset, LDNode->getChain() };
-    return CurDAG->getMachineNode(FISC::LDR, SDLoc(N), MVT::i64, MVT::Other, ops);;
-}
-
 SDValue FISCDAGToDAGISel::ConstantToRegisterExpand(SDNode * N, SDValue Constant) {
-    /* This function deals with operands that are constants that should 
-       be replaced into a register output, where we'll load that constant into */
+    /* This function deals with operands that are constants that should
+    be replaced into a register output, where we'll load that constant into */
 
     /* We'll need to load this constant value into a new virtual register */
 
@@ -122,6 +94,59 @@ SDValue FISCDAGToDAGISel::ConstantToRegisterExpand(SDNode * N, SDValue Constant)
     return SDValue(Move, 0);
 }
 
+bool FISCDAGToDAGISel::SelectAddr(SDValue Addr, SDValue &Base, SDValue &Offset) {
+    if (FrameIndexSDNode *FIN = dyn_cast<FrameIndexSDNode>(Addr)) {
+        EVT PtrVT = getTargetLowering()->getPointerTy(CurDAG->getDataLayout());
+        Base      = CurDAG->getTargetFrameIndex(FIN->getIndex(), PtrVT);
+        Offset    = CurDAG->getTargetConstant(0, Addr, MVT::i64);
+        return true;
+    }
+
+    switch (Addr.getOpcode()) {
+        case ISD::TargetExternalSymbol:
+        case ISD::TargetGlobalAddress:
+        case ISD::TargetGlobalTLSAddress:
+            return false; /// direct calls.
+    }
+    
+    Base   = Addr;
+    Offset = CurDAG->getTargetConstant(0, Addr, MVT::i64);
+    return true;
+}
+
+SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
+    // TODO: If the load is 32 bits, select LDRW, if 16 bits, select LDRH, if 8, LDRB
+    LoadSDNode *LDNode = cast<LoadSDNode>(N);
+    FrameIndexSDNode *FIN =	dyn_cast<FrameIndexSDNode>(N->getOperand(1));
+    SDValue Base = LDNode->getBasePtr();
+
+    switch (Base.getOpcode()) {
+    case ISD::TargetGlobalAddress:  {
+        GlobalAddressSDNode *GA = dyn_cast<GlobalAddressSDNode>(LDNode->getBasePtr());
+        const GlobalValue   *GV = GA->getGlobal();
+        Base = CurDAG->getTargetGlobalAddress(GV, SDLoc(GA), MVT::i64, 0, FISCII::MO_CALL26); /// FIXME: THIS FLAG IS NOT OK
+        break;
+    }
+    case ISD::FrameIndex: 
+        Base = CurDAG->getTargetFrameIndex(FIN->getIndex(), MVT::i64);
+        break;
+    case ISD::Constant:
+        Base = ConstantToRegisterExpand(N, Base);
+        break;
+    case ISD::LOAD: // Let LLVM select the default nodes for these
+    case ISD::CopyFromReg:
+    case ISD::ADD: break;
+    default:
+        DEBUG(errs() << ">> Opcode: " << Base.getOpcode() << "\n");
+        llvm_unreachable("Unknown base pointer opcode!");
+    }
+    
+    
+    SDValue Offset = CurDAG->getTargetConstant(0, LDNode, MVT::i64);
+    SDValue ops[]  = { Base, Offset, LDNode->getChain() };
+    return CurDAG->getMachineNode(FISC::LDR, SDLoc(N), MVT::i64, MVT::Other, ops);
+}
+
 SDNode *FISCDAGToDAGISel::SelectIndexedStore(SDNode *N) {
     // TODO: If the store is 32 bits, select STRW, if 16 bits, select STRH, if 8, STRB
     StoreSDNode *STNode = cast<StoreSDNode>(N);
@@ -132,7 +157,7 @@ SDNode *FISCDAGToDAGISel::SelectIndexedStore(SDNode *N) {
     /* Check for operands that need to be handled/converted */
 
     switch (Src.getOpcode()) {
-    case ISD::Constant: 
+    case ISD::Constant:
         /* Source operand is a constant. We must mutate it into a load into a virtual register  */
         Src = ConstantToRegisterExpand(N, Src);
         break;
@@ -155,7 +180,16 @@ SDNode *FISCDAGToDAGISel::SelectIndexedStore(SDNode *N) {
         Base = CurDAG->getTargetFrameIndex(FIN->getIndex(), MVT::i64);
         break;
     }
-    default: 
+    case ISD::TargetGlobalAddress: {
+        GlobalAddressSDNode *GA = dyn_cast<GlobalAddressSDNode>(Base);
+        const GlobalValue   *GV = GA->getGlobal();
+        Base = CurDAG->getTargetGlobalAddress(GV, SDLoc(GA), MVT::i64, 0, FISCII::MO_CALL26); /// FIXME: THIS FLAG IS NOT OK
+        break;
+    }
+    case ISD::LOAD: // Let LLVM select the default nodes for these
+    case ISD::ADD: break;
+    default:
+        DEBUG(errs() << ">> Opcode: " << Base.getOpcode() << "\n");
         llvm_unreachable("Unknown base pointer opcode!");
     }
 
@@ -205,23 +239,35 @@ SDNode *FISCDAGToDAGISel::SelectConditionalBranch(SDNode *N) {
     SDValue LHS    = N->getOperand(2);
     SDValue RHS    = N->getOperand(3);
     SDValue Target = N->getOperand(4);
-  
+ 
     /// Generate a comparison instruction.
     EVT      CompareTys[] = { MVT::Other, MVT::Glue };
     SDVTList CompareVT    = CurDAG->getVTList(CompareTys);
     SDValue  CompareOps[] = {LHS, RHS, Chain};
-    SDNode  *Compare      = CurDAG->getMachineNode(FISC::CMP, N, CompareVT, CompareOps);
+    SDNode  *Compare      = CurDAG->getMachineNode(FISC::SUBSrr, N, CompareVT, CompareOps);
   
     /// Generate a predicated branch instruction.
-    CondCodeSDNode *CC          = cast<CondCodeSDNode>(Cond.getNode());
-    SDValue         CCVal       = CurDAG->getTargetConstant(CC->get(), N, MVT::i64);
-    SDValue         BranchOps[] = {CCVal, Target, SDValue(Compare, 0), SDValue(Compare, 1)};
+    CondCodeSDNode *CC = cast<CondCodeSDNode>(Cond.getNode());
+    uint64_t TargetCCode;
+    switch (CC->get()) {
+    case ISD::CondCode::SETEQ: TargetCCode = 1; break;
+    case ISD::CondCode::SETNE: TargetCCode = 2; break;
+    case ISD::CondCode::SETLT: TargetCCode = 3; break;
+    case ISD::CondCode::SETLE: TargetCCode = 4; break;
+    case ISD::CondCode::SETGT: TargetCCode = 5; break;
+    case ISD::CondCode::SETGE: TargetCCode = 6; break;
+    default:
+        llvm_unreachable("Condition code not supported!");
+    }
+       
+    SDValue CCVal = CurDAG->getTargetConstant(TargetCCode, N, MVT::i64);
+    SDValue BranchOps[] = {CCVal, Target, SDValue(Compare, 0), SDValue(Compare, 1)};
     return CurDAG->getMachineNode(FISC::Bcc, N, MVT::Other, BranchOps);
 }
 
 SDNode *FISCDAGToDAGISel::Select(SDNode *N) {
     DEBUG(errs() << ">>>>>> Selecting Node: "; N->dump(CurDAG); errs() << "\n");
-        
+    
     switch (N->getOpcode()) {
     case ISD::LOAD:
         return SelectIndexedLoad(N);
@@ -231,6 +277,16 @@ SDNode *FISCDAGToDAGISel::Select(SDNode *N) {
         return SelectFrameIndex(N);
     case ISD::Constant:
         return SelectMoveImmediate(N);
+    case ISD::ADD: {
+        if (N->getOperand(0).getOpcode() == ISD::TargetGlobalAddress) {
+            //////////////////////////////////////////////////////////////////////
+            //////////////////////////////// TODO ////////////////////////////////
+            //////////////////////////////////////////////////////////////////////
+            /// 1. Get global address's value
+            /// 2. If val <= 12 bits : Insert addi. Else MOVK, else MOVK + MOVZ + ...
+        }
+        break;
+    }
     case ISD::BR_CC:
         return SelectConditionalBranch(N);
     }

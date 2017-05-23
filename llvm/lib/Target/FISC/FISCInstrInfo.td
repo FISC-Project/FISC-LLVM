@@ -18,11 +18,11 @@ include "FISCOperators.td"
 // ALU Instructions
 //===----------------------------------------------------------------------===//
 
-multiclass BinOp<bits<11> opcode_r, bits<10> opcode_i, string opstr, SDNode opnode> 
+multiclass BinOp<bits<11> opcode_r, bits<10> opcode_i, string opstr_r, string opstr_i, SDNode opnode> 
 {
     def rr : ALURInst<opcode_r, (outs GRRegs:$dst),
                                 (ins GRRegs:$src1, GRRegs:$src2),
-                                !strconcat(opstr, " $dst, $src1, $src2"),
+                                !strconcat(opstr_r, " $dst, $src1, $src2"),
                                 [(set i64:$dst, (opnode i64:$src1, i64:$src2))]> 
     {
         bits<5> dst;
@@ -35,7 +35,7 @@ multiclass BinOp<bits<11> opcode_r, bits<10> opcode_i, string opstr, SDNode opno
     }
     def ri : ALUIInst<opcode_i, (outs GRRegs:$dst),
                                 (ins GRRegs:$src1, i64imm:$imm),
-                                !strconcat(opstr, " $dst, $src1, $imm"),
+                                !strconcat(opstr_i, " $dst, $src1, $imm"),
                                 [(set i64:$dst, (opnode i64:$src1, FISCimm12:$imm))]> 
     {
         bits<5>  dst;
@@ -64,14 +64,14 @@ multiclass ShiftOp<bits<11> opcode, string opstr, SDNode opnode>
     }
 }
 
-defm ADD  : BinOp<0b10001011000, 0b1001000100, "add",  add>;
-defm ADDS : BinOp<0b10101011000, 0b1011000100, "adds", add>;
-defm SUB  : BinOp<0b11001011000, 0b1101000100, "sub",  sub>;
-defm SUBS : BinOp<0b10101011000, 0b1011000100, "subs", sub>;
-defm AND  : BinOp<0b10001010000, 0b1001001000, "and",  and>;
-defm ANDS : BinOp<0b11101010000, 0b1111001000, "ands", and>;
-defm EOR  : BinOp<0b11001010000, 0b1101001000, "eor",  xor>;
-defm ORR  : BinOp<0b10101010000, 0b1011001000, "orr",  or>;
+defm ADD  : BinOp<0b10001011000, 0b1001000100, "add",  "addi",  add>;
+defm ADDS : BinOp<0b10101011000, 0b1011000100, "adds", "addis", add>;
+defm SUB  : BinOp<0b11001011000, 0b1101000100, "sub",  "subi",  sub>;
+defm SUBS : BinOp<0b10101011000, 0b1011000100, "subs", "subis", sub>;
+defm AND  : BinOp<0b10001010000, 0b1001001000, "and",  "andi",  and>;
+defm ANDS : BinOp<0b11101010000, 0b1111001000, "ands", "andis", and>;
+defm EOR  : BinOp<0b11001010000, 0b1101001000, "eor",  "eori",  xor>;
+defm ORR  : BinOp<0b10101010000, 0b1011001000, "orr",  "orri",  or>;
 defm LSL  : ShiftOp<0b11010011011, "lsl", shl>;
 defm LSR  : ShiftOp<0b11010011010, "lsr", srl>;
 
@@ -130,7 +130,8 @@ def MOVZ : MOV<0b110100101, "movz",(ins i64imm:$imm, i64imm:$lsl)>;
 def MOVi64 : InstFISC<(outs GRRegs:$dst), (ins i64imm:$src), "",
                       [(set i64:$dst, (movei64 imm:$src))]> 
 {
-    let isPseudo = 1;
+    let isPseudo      = 1;
+    let isCodeGenOnly = 1;
 }
 
 //===----------------------------------------------------------------------===//
@@ -159,11 +160,12 @@ def LDR  : InstFISC<(outs GRRegs:$val), (ins memsrc:$addr),
 {
     bits<5>  val;
     bits<14> addr;
-    let Inst{31-21} = 0b11111000010;
-    let Inst{20-12} = addr{8-0};
-    let Inst{11-10} = 0b00;
-    let Inst{9-5}   = addr{13-9};
-    let Inst{4-0}   = val;
+    let Inst{31-21}   = 0b11111000010;
+    let Inst{20-12}   = addr{8-0};
+    let Inst{11-10}   = 0b00;
+    let Inst{9-5}     = addr{13-9};
+    let Inst{4-0}     = val;
+    let DecoderMethod = "DecodeMem";
 }
 
 def STR : InstFISC<(outs), (ins GRRegs:$val, memsrc:$addr),
@@ -172,11 +174,12 @@ def STR : InstFISC<(outs), (ins GRRegs:$val, memsrc:$addr),
 {
     bits<14> addr;
     bits<5>  val;
-    let Inst{31-21} = 0b11111000000;
-    let Inst{20-12} = addr{8-0};
-    let Inst{11-10} = 0b00;
-    let Inst{9-5}   = addr{13-9};
-    let Inst{4-0}   = val;
+    let Inst{31-21}   = 0b11111000000;
+    let Inst{20-12}   = addr{8-0};
+    let Inst{11-10}   = 0b00;
+    let Inst{9-5}     = addr{13-9};
+    let Inst{4-0}     = val;
+    let DecoderMethod = "DecodeMem";
 }
 
 //===----------------------------------------------------------------------===//
@@ -201,6 +204,7 @@ let isCall = 1, Defs = [LR], Uses = [SP] in
     {
         bits<26> addr;
         let Inst{25-0} = addr;
+        let DecoderMethod = "DecodeJumpTarget";
     }
 }
 
@@ -211,9 +215,9 @@ def : Pat<(fisc_call i64:$dst), (BL tglobaladdr:$dst)>;
 // Branch Instructions
 //===----------------------------------------------------------------------===//
 
-let isTerminator = 1, isBranch = 1, isBarrier = 1 in 
+let isTerminator = 1, isBranch = 1, isBarrier = 1 in
 {
-    def B : InstFISC<(outs), (ins b_target:$dst), "b $dst", [(br bb:$dst)]> 
+    def B : InstFISC<(outs), (ins b_target:$dst), "b $dst", [(br bb:$dst)]>
     {
         bits<26> dst;
         let Inst{31-26} = 0b001010;
@@ -223,7 +227,14 @@ let isTerminator = 1, isBranch = 1, isBarrier = 1 in
 
 let isTerminator = 1, isBranch = 1 in 
 {
-    def Bcc : InstFISC<(outs), (ins cc_val:$cc, b_target:$dst), "b$cc $dst",  []>;
+    def Bcc : InstFISC<(outs), (ins cc_val:$cc, bcc_target:$dst), "b$cc $dst",  []> 
+    {
+        bits<19> dst;
+        bits<5>  cc;
+        let Inst{31-24} = 0b01010100;
+        let Inst{23-5}  = dst;
+        let Inst{4-0}   = cc;
+    }
 }
 
 //===----------------------------------------------------------------------===//

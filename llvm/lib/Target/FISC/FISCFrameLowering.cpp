@@ -60,7 +60,7 @@ static unsigned materializeOffset(MachineFunction &MF, MachineBasicBlock &MBB,
         return 0;
     } else {
         /// The stack offset does not fit in the ADD/SUB instruction.
-        /// Materialize the offset using MOVZ+MOVK.
+        /// Materialize the offset using MOVZ + MOVK.
         unsigned OffsetReg = FISC::X9;
         unsigned OffsetQ1 = (unsigned)(Offset & 0xffff);
         unsigned OffsetQ2 = (unsigned)((Offset & 0xffff0000) >> 16);

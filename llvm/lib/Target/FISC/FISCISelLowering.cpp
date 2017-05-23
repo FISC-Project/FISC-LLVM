@@ -39,6 +39,8 @@
 
 using namespace llvm;
 
+#define DEBUG_TYPE "fisc - isellowering"
+
 const char *FISCTargetLowering::getTargetNodeName(unsigned Opcode) const {
     switch (Opcode) {
     default:
@@ -239,7 +241,6 @@ SDValue FISCTargetLowering::LowerFormalArguments(
     /// Assign locations to all of the incoming arguments.
     SmallVector<CCValAssign, 16> ArgLocs;
     CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs, *DAG.getContext());
-
     CCInfo.AnalyzeFormalArguments(Ins, CC_FISC);
 
     for (auto &VA : ArgLocs) {
@@ -248,10 +249,11 @@ SDValue FISCTargetLowering::LowerFormalArguments(
             EVT RegVT = VA.getLocVT();
             assert(RegVT.getSimpleVT().SimpleTy == MVT::i64 &&
                     "Only support MVT::i64 register passing");
+
             const unsigned VReg = RegInfo.createVirtualRegister(&FISC::GRRegsRegClass);
             RegInfo.addLiveIn(VA.getLocReg(), VReg);
+            
             SDValue ArgIn = DAG.getCopyFromReg(Chain, dl, VReg, RegVT);
-
             InVals.push_back(ArgIn);
             continue;
         }
@@ -260,17 +262,17 @@ SDValue FISCTargetLowering::LowerFormalArguments(
 
         const unsigned Offset = VA.getLocMemOffset();
 
+        /// Create Frame Index node
         const int FI = MF.getFrameInfo()->CreateFixedObject(8, Offset, true);
         EVT PtrTy = getPointerTy(DAG.getDataLayout());
         SDValue FIPtr = DAG.getFrameIndex(FI, PtrTy);
-
+    
         assert(VA.getValVT() == MVT::i64 && "Only support passing arguments as i64");
 
         SDValue Load = DAG.getLoad(VA.getValVT(), dl, Chain, FIPtr, MachinePointerInfo(), false, false, false, 0);
         InVals.push_back(Load);
     }
-
-  return Chain;
+    return Chain;
 }
 
 //===----------------------------------------------------------------------===//

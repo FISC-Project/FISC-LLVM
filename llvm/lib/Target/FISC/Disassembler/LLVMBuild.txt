@@ -1,4 +1,4 @@
-;===- ./lib/Target/FISC/LLVMBuild.txt -------------------------*- Conf -*--===;
+;===- ./lib/Target/FISC/Disassembler/LLVMBuild.txt --------------*- Conf -*--===;
 ;
 ;                     The LLVM Compiler Infrastructure
 ;
@@ -15,38 +15,9 @@
 ;
 ;===------------------------------------------------------------------------===;
 
-[common]
-subdirectories = 
-	AsmParser
-	Disassembler
-	InstPrinter 
-	MCTargetDesc 
-	TargetInfo
-
 [component_0]
-type = TargetGroup
-name = FISC
-parent = Target
-has_asmparser = 1
-has_asmprinter = 1
-has_disassembler = 1
-
-[component_1]
 type = Library
-name = FISCCodeGen
+name = FISCDisassembler
 parent = FISC
-required_libraries = 
-	Analysis 
-	AsmPrinter 
-	CodeGen 
-	Core 
-	MC 
-	SelectionDAG 
-	Support 
-	Target 
-	TransformUtils 
-	FISCAsmPrinter 
-	FISCDesc 
-	FISCInfo
-
+required_libraries = MCDisassembler Support FISCInfo
 add_to_library_groups = FISC

@@ -11,7 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define DEBUG_TYPE "mccodeemitter"
+#define DEBUG_TYPE "fisc - mc code emitter"
 
 #include "MCTargetDesc/FISCMCTargetDesc.h"
 #include "MCTargetDesc/FISCFixupKinds.h"
@@ -60,6 +60,14 @@ public:
                             SmallVectorImpl<MCFixup> &Fixups,
                             const MCSubtargetInfo &STI) const;
 
+    unsigned getBranch26TargetOpValue(const MCInst &MI, unsigned OpIdx,
+                                      SmallVectorImpl<MCFixup> &Fixups,
+                                      const MCSubtargetInfo &STI) const;
+
+    unsigned getBranch19TargetOpValue(const MCInst &MI, unsigned OpIdx,
+                                      SmallVectorImpl<MCFixup> &Fixups,
+                                      const MCSubtargetInfo &STI) const;
+
     void EmitByte(unsigned char C, raw_ostream &OS) const { 
         OS << (char)C; 
     }
@@ -99,7 +107,7 @@ unsigned FISCMCCodeEmitter::getMachineOpValue(const MCInst &MI,
 
     const MCExpr *Expr = MO.getExpr();
     MCExpr::ExprKind Kind = Expr->getKind();
-    
+        
     if (Kind == MCExpr::Binary) {
         Expr = static_cast<const MCBinaryExpr*>(Expr)->getLHS();
         Kind = Expr->getKind();
@@ -108,6 +116,7 @@ unsigned FISCMCCodeEmitter::getMachineOpValue(const MCInst &MI,
     assert (Kind == MCExpr::SymbolRef);
 
     unsigned FixupKind;
+    
     switch (cast<MCSymbolRefExpr>(Expr)->getKind()) {
     default:
         llvm_unreachable("Unknown fixup kind!");
@@ -126,6 +135,9 @@ unsigned FISCMCCodeEmitter::getMachineOpValue(const MCInst &MI,
     case MCSymbolRefExpr::VK_FISC_CALL26:
         FixupKind = FISC::fixup_fisc_call26_pcrel;
         break;
+    case MCSymbolRefExpr::VK_FISC_CALL19:
+        FixupKind = FISC::fixup_fisc_call19_pcrel;
+        break;
     }
 
     Fixups.push_back(MCFixup::create(0, MO.getExpr(), MCFixupKind(FixupKind)));
@@ -143,6 +155,36 @@ unsigned FISCMCCodeEmitter::getMemSrcValue(const MCInst &MI, unsigned OpIdx,
     Bits |= (getMachineOpValue(MI, RegMO, Fixups, STI) << 9);
     Bits |= (unsigned)ImmMO.getImm() & 0x1ff;
     return Bits;
+}
+
+unsigned FISCMCCodeEmitter::getBranch26TargetOpValue(const MCInst &MI, unsigned OpIdx,
+                                                     SmallVectorImpl<MCFixup> &Fixups,
+                                                     const MCSubtargetInfo &STI) const
+{
+    const MCOperand &MO = MI.getOperand(OpIdx);
+    
+    if(MO.isImm()) return MO.getImm();
+
+    assert(MO.isExpr() && "getBranch26TargetOpValue expects only expressions");
+
+    const MCExpr *Expr = MO.getExpr();
+    Fixups.push_back(MCFixup::create(0, Expr, MCFixupKind(FISC::fixup_fisc_call26_pcrel)));
+    return 0;
+}
+
+unsigned FISCMCCodeEmitter::getBranch19TargetOpValue(const MCInst &MI, unsigned OpIdx,
+                                                     SmallVectorImpl<MCFixup> &Fixups,
+                                                     const MCSubtargetInfo &STI) const
+{
+    const MCOperand &MO = MI.getOperand(OpIdx);
+
+    if (MO.isImm()) return MO.getImm();
+
+    assert(MO.isExpr() && "getBranch19TargetOpValue expects only expressions");
+
+    const MCExpr *Expr = MO.getExpr();
+    Fixups.push_back(MCFixup::create(0, Expr, MCFixupKind(FISC::fixup_fisc_call19_pcrel)));
+    return 0;
 }
 
 void FISCMCCodeEmitter::encodeInstruction(const MCInst &MI, raw_ostream &OS,

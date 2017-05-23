@@ -87,6 +87,7 @@ MCOperand FISCMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
         Kind = MCSymbolRefExpr::VK_FISC_CALL26;
         break;
     }
+
     const MCSymbolRefExpr *MCSym = MCSymbolRefExpr::create(Symbol, Kind, *Ctx);
 
     if (!Offset)

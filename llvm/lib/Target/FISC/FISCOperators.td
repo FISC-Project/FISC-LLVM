@@ -77,7 +77,17 @@ def FISCimm2 : Operand<i64>, ImmLeaf<i64, [{
 
 def calltarget : Operand<i64>;
 
-def b_target : Operand<OtherVT>;
+def b_target : Operand<OtherVT> {
+    let EncoderMethod = "getBranch26TargetOpValue";
+    let OperandType   = "OPERAND_PCREL";
+    let DecoderMethod = "DecodeBranch26Target";
+}
+
+def bcc_target : Operand<OtherVT> {
+    let EncoderMethod = "getBranch19TargetOpValue";
+    let OperandType   = "OPERAND_PCREL";
+    let DecoderMethod = "DecodeCJumpTarget";
+}
 
 def cc_val : Operand<i64> {
     let PrintMethod = "printCondCode";
