@@ -297,6 +297,8 @@ StringRef MCSymbolRefExpr::getVariantKindName(VariantKind Kind) {
   case VK_FISC_Q3: return "FISC_Q3";
   case VK_FISC_Q4: return "FISC_Q4";
   case VK_FISC_CALL26: return "FISC_CALL26";
+  case VK_FISC_CALL19: return "FISC_CALL19";
+  case VK_FISC_9BIT: return "VK_FISC_9BIT";
   case VK_Hexagon_PCREL: return "PCREL";
   case VK_Hexagon_LO16: return "LO16";
   case VK_Hexagon_HI16: return "HI16";

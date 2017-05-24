@@ -34,7 +34,7 @@ STATISTIC(MCNumEmitted, "Number of MC instructions emitted.");
 namespace {
 class FISCMCCodeEmitter : public MCCodeEmitter {
     FISCMCCodeEmitter(const FISCMCCodeEmitter &) = delete;
-    void operator=(const FISCMCCodeEmitter &)    = delete;
+    void operator=(const FISCMCCodeEmitter &) = delete;
     const MCInstrInfo &MCII;
     const MCContext   &CTX;
 
@@ -137,6 +137,9 @@ unsigned FISCMCCodeEmitter::getMachineOpValue(const MCInst &MI,
         break;
     case MCSymbolRefExpr::VK_FISC_CALL19:
         FixupKind = FISC::fixup_fisc_call19_pcrel;
+        break;
+    case MCSymbolRefExpr::VK_FISC_9BIT:
+        FixupKind = FISC::fixup_fisc_9bit_address;
         break;
     }
 

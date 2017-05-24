@@ -287,6 +287,7 @@ public:
 	VK_FISC_Q4,
 	VK_FISC_CALL26,
 	VK_FISC_CALL19,
+	VK_FISC_9BIT,
 
 	VK_COFF_IMGREL32, // symbol@imgrel (image-relative)
 

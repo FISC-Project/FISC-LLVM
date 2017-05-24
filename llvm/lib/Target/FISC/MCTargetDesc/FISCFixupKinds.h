@@ -22,6 +22,7 @@ namespace FISC {
         fixup_fisc_mov_q4_pcrel,
         fixup_fisc_call26_pcrel,
         fixup_fisc_call19_pcrel,
+        fixup_fisc_9bit_address,
 
         /// Marker
         LastTargetFixupKind,

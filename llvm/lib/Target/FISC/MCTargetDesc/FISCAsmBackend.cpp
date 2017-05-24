@@ -59,6 +59,7 @@ public:
             { "fixup_fisc_mov_q4_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
             { "fixup_fisc_call26_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
             { "fixup_fisc_call19_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
+            { "fixup_fisc_9bit_address", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
         };
 
         if (Kind < FirstTargetFixupKind)
@@ -110,17 +111,19 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value, MCContext
     default:
         llvm_unreachable("Unknown fixup kind!");
     case FISC::fixup_fisc_mov_q4_pcrel:
-        return (Value >>= 48) & 0xFFFF;
+        return ((Value >>= 48) & 0xFFFF) << 5;
     case FISC::fixup_fisc_mov_q3_pcrel:
-        return (Value >>= 32) & 0xFFFF;
+        return ((Value >>= 32) & 0xFFFF) << 5;
     case FISC::fixup_fisc_mov_q2_pcrel:
-        return (Value >>= 16) & 0xFFFF;
+        return ((Value >>= 16) & 0xFFFF) << 5;
     case FISC::fixup_fisc_mov_q1_pcrel:
-        return Value & 0xFFFF;
+        return (Value & 0xFFFF) << 5;
     case FISC::fixup_fisc_call26_pcrel:
         return Value & 0x3FFFFFF;
     case FISC::fixup_fisc_call19_pcrel:
         return (Value & 0x7FFFF) << 5;
+    case FISC::fixup_fisc_9bit_address:
+        return (Value & 0x1FF) << 12;
     }
     return Value;
 }
@@ -146,11 +149,11 @@ void FISCAsmBackend::applyFixup(const MCFixup &Fixup, char *Data,
 {
     unsigned NumBytes = 4;
 
-    printf("\n\nFIXUP: %d VAL BEFORE: %d", Fixup.getKind(), Value);
+    printf("\n\nFIXUP: %d VALUE: %d ", Fixup.getKind(), Value);
 
     Value = adjustFixupValue(Fixup, Value);
 
-    printf("\n\nVAL AFTER: %d", Value);
+    printf("AFTER: %d\n\n", Value);
 
     if (!Value)
         return; /// Doesn't change encoding.

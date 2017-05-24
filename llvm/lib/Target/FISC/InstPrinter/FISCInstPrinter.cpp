@@ -65,7 +65,8 @@ static void printExpr(const MCExpr *Expr, raw_ostream &OS) {
            Kind == MCSymbolRefExpr::VK_FISC_Q3 || 
            Kind == MCSymbolRefExpr::VK_FISC_Q4 ||
            Kind == MCSymbolRefExpr::VK_FISC_CALL26 ||
-           Kind == MCSymbolRefExpr::VK_FISC_CALL19);
+           Kind == MCSymbolRefExpr::VK_FISC_CALL19 ||
+           Kind == MCSymbolRefExpr::VK_FISC_9BIT);
 
     OS << SRE->getSymbol();
 
@@ -125,7 +126,7 @@ void FISCInstPrinter::printOperand(const MCInst *MI, unsigned OpNo, raw_ostream 
     if (Op.isImm()) {
         std::string lsl_str = "";
 
-        if((MI->getOpcode() == FISC::MOVZ || MI->getOpcode() == FISC::MOVK) && OpNo == 2)
+        if((MI->getOpcode() == FISC::MOVZ || MI->getOpcode() == FISC::MOVK || MI->getOpcode() == FISC::MOVRZ || MI->getOpcode() == FISC::MOVRK) && OpNo == 2)
             lsl_str = "lsl ";
 
         O << lsl_str << "0x" << FISC_ez_int2hex(Op.getImm());

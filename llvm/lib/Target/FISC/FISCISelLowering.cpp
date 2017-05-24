@@ -81,8 +81,7 @@ SDValue FISCTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const 
 SDValue FISCTargetLowering::LowerGlobalAddress(SDValue Op, SelectionDAG& DAG) const {
     EVT VT = Op.getValueType();
     GlobalAddressSDNode *GlobalAddr = cast<GlobalAddressSDNode>(Op.getNode());
-    SDValue TargetAddr = DAG.getTargetGlobalAddress(GlobalAddr->getGlobal(), Op, MVT::i64, 0, FISCII::MO_CALL26);
-    return TargetAddr;
+    return DAG.getTargetGlobalAddress(GlobalAddr->getGlobal(), Op, MVT::i64, 0, FISCII::MO_CALL26);
 }
 
 //===----------------------------------------------------------------------===//

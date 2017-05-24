@@ -124,8 +124,10 @@ class MOV<bits<9> opcode, string opstr, dag ins>
     let Inst{4-0}   = dst;
 }
 
-def MOVK : MOV<0b111100101, "movk",(ins i64imm:$imm, i64imm:$lsl, i64imm:$ign)>;
-def MOVZ : MOV<0b110100101, "movz",(ins i64imm:$imm, i64imm:$lsl)>;
+def MOVK  : MOV<0b111100101, "movk",(ins i64imm:$imm, i64imm:$lsl, i64imm:$ign)>;
+def MOVZ  : MOV<0b110100101, "movz",(ins i64imm:$imm, i64imm:$lsl)>;
+def MOVRK : MOV<0b111110101, "movrk",(ins i64imm:$imm, i64imm:$lsl, i64imm:$ign)>;
+def MOVRZ : MOV<0b110110101, "movrz",(ins i64imm:$imm, i64imm:$lsl)>;
 
 def MOVi64 : InstFISC<(outs GRRegs:$dst), (ins i64imm:$src), "",
                       [(set i64:$dst, (movei64 imm:$src))]> 

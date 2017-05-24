@@ -55,6 +55,9 @@ namespace FISCII {
         /// MO_CALL19 - On a conditional branch instruction, this represents a relocation for the 19 bit address
         MO_CALL19 = 0x20,
 
+        /// Flag for 9 bit addresses
+        MO_9BIT = 0x40,
+
         /// MO_OPTION_MASK - Most flags are mutually exclusive; this mask selects
         /// just that part of the flag set.
         MO_OPTION_MASK = 0x7f,
