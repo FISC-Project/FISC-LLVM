@@ -36,4 +36,4 @@ def CC_FISC : CallingConv<[
     CCIfType<[i64], CCAssignToStack<8, 8>>
 ]>;
 
-def CC_Save : CalleeSavedRegs<(add X19, X20, X21, X22, X23, X24, X25, X26, X27)>;
+def CC_Save : CalleeSavedRegs<(add LR, X19, X20, X21, X22, X23, X24, X25, X26, X27)>;

@@ -44,9 +44,10 @@ FISCRegisterInfo::FISCRegisterInfo()
 
 const uint16_t * FISCRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
     static const uint16_t CalleeSavedRegs[] = { 
-        FISC::X19, FISC::X20, FISC::X21,
-        FISC::X22, FISC::X23, FISC::X24,
-        FISC::X25, FISC::X26, FISC::X27, 0
+        FISC::LR,  FISC::X19, FISC::X20,
+        FISC::X21, FISC::X22, FISC::X23, 
+        FISC::X24, FISC::X25, FISC::X26, 
+        FISC::X27, 0
     };
     return CalleeSavedRegs;
 }
