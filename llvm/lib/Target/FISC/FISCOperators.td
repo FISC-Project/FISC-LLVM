@@ -26,6 +26,16 @@ def callseq_end          : SDNode<"ISD::CALLSEQ_END",   SDT_FISCCallSeqEnd,
 
 def SDT_FISCCall         : SDTypeProfile<0, -1, [SDTCisVT<0, iPTR>]>;
 
+def SDT_FISCSelectCC     : SDTypeProfile<1, 3, [SDTCisSameAs<0, 1>,
+                                                SDTCisSameAs<1, 2>, 
+                                                SDTCisVT<3, i64>]>;
+
+def FISCSelectCC : SDNode<"FISCISD::SELECT_CC", SDT_FISCSelectCC, [SDNPInGlue]>;
+
+def SDT_FISCCmp  : SDTypeProfile<0, 2, [SDTCisSameAs<0, 1>]>;
+
+def FISCCmp      : SDNode<"FISCISD::CMP", SDT_FISCCmp, [SDNPOutGlue]>;
+
 //===----------------------------------------------------------------------===//
 // Custom SDNodes.
 //===----------------------------------------------------------------------===//

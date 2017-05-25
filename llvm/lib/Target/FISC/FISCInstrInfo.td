@@ -141,7 +141,8 @@ def MOVi64 : InstFISC<(outs GRRegs:$dst), (ins i64imm:$src), "",
 //===----------------------------------------------------------------------===//
 
 def CMP : InstFISC<(outs), (ins GRRegs:$lhs, GRRegs:$rhs),
-                    "cmp $lhs, $rhs", []> 
+                    "cmp $lhs, $rhs", 
+                    [(FISCCmp GRRegs:$lhs, GRRegs:$rhs)]> 
 {
     bits<5> lhs;
     bits<5> rhs;
@@ -150,39 +151,71 @@ def CMP : InstFISC<(outs), (ins GRRegs:$lhs, GRRegs:$rhs),
     let Inst{15-10} = 0;
     let Inst{9-5}   = lhs;
     let Inst{4-0}   = 31;
+
+    let Defs = [CPSR];
 }
+
+def : Pat<(FISCCmp GRRegs:$lhs, GRRegs:$rhs),
+          (SUBSrr GRRegs:$lhs, GRRegs:$rhs)>;
 
 //===----------------------------------------------------------------------===//
 // Load/Store Instructions
 //===----------------------------------------------------------------------===//
 
-def LDR  : InstFISC<(outs GRRegs:$val), (ins memsrc:$addr),
-                   "ldr $val, $addr",
-                   [(set i64:$val, (load addr:$addr))]>
+class LOAD_TYPE<bits<11> opcode, bits<2> sz, string opstr> 
+    : InstFISC<(outs GRRegs:$val), (ins memsrc:$addr),
+               !strconcat(opstr, " $val, $addr"),
+               [(set i64:$val, (load addr:$addr))]>
 {
     bits<5>  val;
     bits<14> addr;
-    let Inst{31-21}   = 0b11111000010;
+    let Inst{31-21}   = opcode;
     let Inst{20-12}   = addr{8-0};
-    let Inst{11-10}   = 0b00;
+    let Inst{11-10}   = sz;
     let Inst{9-5}     = addr{13-9};
     let Inst{4-0}     = val;
     let DecoderMethod = "DecodeMem";
 }
 
-def STR : InstFISC<(outs), (ins GRRegs:$val, memsrc:$addr),
-                  "str $val, $addr",
-                  [(store i64:$val, addr:$addr)]> 
+class STORE_TYPE<bits<11> opcode, bits<2> sz, string opstr> 
+    : InstFISC<(outs), (ins GRRegs:$val, memsrc:$addr),
+               !strconcat(opstr, " $val, $addr"),
+               [(store i64:$val, addr:$addr)]>
 {
     bits<14> addr;
     bits<5>  val;
-    let Inst{31-21}   = 0b11111000000;
+    let Inst{31-21}   = opcode;
     let Inst{20-12}   = addr{8-0};
-    let Inst{11-10}   = 0b00;
+    let Inst{11-10}   = sz;
     let Inst{9-5}     = addr{13-9};
     let Inst{4-0}     = val;
     let DecoderMethod = "DecodeMem";
 }
+
+def LDR    : LOAD_TYPE<0b11111000010, 0b00, "ldr">;                  
+def LDRB   : LOAD_TYPE<0b00111000010, 0b01, "ldrb">;
+def LDRH   : LOAD_TYPE<0b01111000010, 0b10, "ldrh">;
+def LDRSW  : LOAD_TYPE<0b10111000100, 0b11, "ldrsw">;
+def LDRXR  : LOAD_TYPE<0b11001000010, 0b00, "ldrxr">;
+
+def LDRR   : LOAD_TYPE<0b11111010010, 0b00, "ldrr">;                  
+def LDRBR  : LOAD_TYPE<0b00111010010, 0b01, "ldrbr">;
+def LDRHR  : LOAD_TYPE<0b01111010010, 0b10, "ldrhr">;
+def LDRSWR : LOAD_TYPE<0b10011000100, 0b11, "ldrswr">;
+def LDRXRR : LOAD_TYPE<0b11001010010, 0b00, "ldrxrr">;
+
+
+def STR    : STORE_TYPE<0b11111000000, 0b00, "str">;                  
+def STRB   : STORE_TYPE<0b00111000000, 0b01, "strb">;
+def STRH   : STORE_TYPE<0b01111000000, 0b10, "strh">;
+def STRW   : STORE_TYPE<0b10111000000, 0b11, "strw">;
+def STRXR  : STORE_TYPE<0b11001000000, 0b00, "strxr">;
+
+def STRR   : STORE_TYPE<0b11111010000, 0b00, "strr">;                  
+def STRBR  : STORE_TYPE<0b00111010000, 0b01, "strbr">;
+def STRHR  : STORE_TYPE<0b01111010000, 0b10, "strhr">;
+def STRWR  : STORE_TYPE<0b10111010000, 0b11, "strwr">;
+def STRXRR : STORE_TYPE<0b10111010001, 0b00, "strxrr">;
 
 //===----------------------------------------------------------------------===//
 // Return Instructions
@@ -227,7 +260,7 @@ let isTerminator = 1, isBranch = 1, isBarrier = 1 in
     }
 }
 
-let isTerminator = 1, isBranch = 1 in 
+let isTerminator = 1, isBranch = 1, Uses = [CPSR] in 
 {
     def Bcc : InstFISC<(outs), (ins cc_val:$cc, bcc_target:$dst), "b$cc $dst",  []> 
     {
@@ -251,4 +284,12 @@ let Defs = [SP], Uses = [SP] in
     def ADJCALLSTACKUP   : FISCPseudoInst<(outs), (ins i64imm:$amt1, i64imm:$amt2),
                                           "# ADJCALLSTACKUP $amt1",
                                           [(callseq_end timm:$amt1, timm:$amt2)]>;
+}
+
+let usesCustomInserter = 1 in {
+    def Select : FISCPseudoInst<(outs GRRegs:$dst),
+                                (ins GRRegs:$lhs, GRRegs:$rhs, i64imm:$cc),
+                                "# Select PSEUDO",
+                                [(set i64:$dst,
+                                 (FISCSelectCC i64:$lhs, i64:$rhs, imm:$cc))]>;
 }

@@ -45,10 +45,12 @@ const char *FISCTargetLowering::getTargetNodeName(unsigned Opcode) const {
     switch (Opcode) {
     default:
         return NULL;
-    case FISCISD::RET_FLAG: return "RetFlag";
-    case FISCISD::LOAD_SYM: return "LOAD_SYM";
-    case FISCISD::MOVEi64:  return "MOVEi64";
-    case FISCISD::CALL:     return "CALL";
+    case FISCISD::RET_FLAG:  return "RetFlag";
+    case FISCISD::LOAD_SYM:  return "LOAD_SYM";
+    case FISCISD::MOVEi64:   return "MOVEi64";
+    case FISCISD::CALL:      return "CALL";
+    case FISCISD::SELECT_CC: return "SELECT_CC";
+    case FISCISD::CMP:       return "CMP";
     }
 }
 
@@ -67,6 +69,8 @@ FISCTargetLowering::FISCTargetLowering(FISCTargetMachine &FISCTM)
 
     /// Nodes that require custom lowering
     setOperationAction(ISD::GlobalAddress, MVT::i64, Custom);
+    setOperationAction(ISD::SELECT, MVT::i64, Expand);
+    setOperationAction(ISD::SELECT_CC, MVT::i64, Custom);
 }
 
 SDValue FISCTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
@@ -75,6 +79,8 @@ SDValue FISCTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const 
         llvm_unreachable("Unimplemented operand");
     case ISD::GlobalAddress:
         return LowerGlobalAddress(Op, DAG);
+    case ISD::SELECT_CC:
+        return LowerSelectCC(Op, DAG);
     }
 }
 
@@ -82,6 +88,154 @@ SDValue FISCTargetLowering::LowerGlobalAddress(SDValue Op, SelectionDAG& DAG) co
     EVT VT = Op.getValueType();
     GlobalAddressSDNode *GlobalAddr = cast<GlobalAddressSDNode>(Op.getNode());
     return DAG.getTargetGlobalAddress(GlobalAddr->getGlobal(), Op, MVT::i64, 0, FISCII::MO_CALL26);
+}
+
+static SDValue FISC_EmitCMP(SDValue &LHS, SDValue &RHS, SDValue &TargetCC,
+                            ISD::CondCode CC,
+                            SDLoc dl, SelectionDAG &DAG)
+{
+    assert(!LHS.getValueType().isFloatingPoint() && "We don't handle FP yet");
+    FISC::CondCodes TCC = FISC::COND_INVAL;
+
+    switch (CC) {
+        default:
+            llvm_unreachable("Invalid integer condition!");
+        case ISD::SETEQ: 
+            TCC = FISC::COND_EQ;
+            if(LHS.getOpcode() == ISD::Constant)
+                std::swap(LHS, RHS);
+            break;
+        case ISD::SETNE: 
+            TCC = FISC::COND_NE;
+            if (LHS.getOpcode() == ISD::Constant)
+                std::swap(LHS, RHS);
+            break;
+        case ISD::SETULE: 
+            std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
+        case ISD::SETUGE:
+            if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
+                LHS = RHS;
+                RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
+                TCC = FISC::COND_LT;
+                break;
+            }
+            TCC = FISC::COND_GE;
+            break;
+        case ISD::SETUGT: 
+            std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
+        case ISD::SETULT: 
+            if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
+                LHS = RHS;
+                RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
+                TCC = FISC::COND_GE;
+                break;
+            }
+            TCC = FISC::COND_LT;
+            break;
+        case ISD::SETLE:
+            std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
+        case ISD::SETGE: 
+            if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
+                LHS = RHS;
+                RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
+                TCC = FISC::COND_LT;
+                break;
+            }
+            TCC = FISC::COND_GE;
+            break;
+        case ISD::SETGT:
+            std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
+        case ISD::SETLT: 
+            if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
+                LHS = RHS;
+                RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
+                TCC = FISC::COND_GE;
+                break;
+            }
+            TCC = FISC::COND_LT;
+            break;
+    }
+    
+    TargetCC = DAG.getConstant(TCC, dl, MVT::i64);
+    return DAG.getNode(FISCISD::CMP, dl, MVT::Glue, LHS, RHS);
+}
+
+SDValue FISCTargetLowering::LowerSelectCC(SDValue Op, SelectionDAG &DAG) const {
+    SDValue LHS = Op.getOperand(0);
+    SDValue RHS = Op.getOperand(1);
+    SDValue TrueV = Op.getOperand(2);
+    SDValue FalseV = Op.getOperand(3);
+    ISD::CondCode CC = cast<CondCodeSDNode>(Op.getOperand(4))->get();
+    SDLoc dl(Op);
+    
+    SDValue TargetCC;
+    SDValue Flag = FISC_EmitCMP(LHS, RHS, TargetCC, CC, dl, DAG);
+
+    SDVTList VTs = DAG.getVTList(Op.getValueType(), MVT::Glue);
+    SDValue Ops[] = {TrueV, FalseV, TargetCC, Flag};
+    return DAG.getNode(FISCISD::SELECT_CC, dl, VTs, Ops);
+}
+
+MachineBasicBlock *FISCTargetLowering::EmitInstrWithCustomInserter(MachineInstr *MI, MachineBasicBlock *BB) const {
+    const TargetInstrInfo &TII = *BB->getParent()->getSubtarget().getInstrInfo();
+    DebugLoc DL = MI->getDebugLoc();
+    assert(MI->getOpcode() == FISC::Select && "Unexpected instr type to insert");
+   
+    // To "insert" a SELECT instruction, we actually have to insert the diamond
+    // control-flow pattern.  The incoming instruction knows the destination vreg
+    // to set, the condition code register to branch on, the true/false values to
+    // select between, and a branch opcode to use.
+    const BasicBlock *LLVM_BB = BB->getBasicBlock();
+    MachineFunction::iterator I = ++BB->getIterator();
+
+    // ThisMBB:
+    // ...
+    //  TrueVal = ...
+    //  cmpTY ccX, r1, r2
+    //  bCC Copy1MBB
+    //  fallthrough --> Copy0MBB
+    MachineBasicBlock *ThisMBB = BB;
+    MachineFunction *F = BB->getParent();
+    MachineBasicBlock *Copy0MBB = F->CreateMachineBasicBlock(LLVM_BB);
+    MachineBasicBlock *Copy1MBB = F->CreateMachineBasicBlock(LLVM_BB);
+
+    F->insert(I, Copy0MBB);
+    F->insert(I, Copy1MBB);
+
+    // Update machine-CFG edges by transferring all successors of the current
+    // block to the new block which will contain the Phi node for the select.
+    Copy1MBB->splice(Copy1MBB->begin(), BB,
+        std::next(MachineBasicBlock::iterator(MI)), BB->end());
+    Copy1MBB->transferSuccessorsAndUpdatePHIs(BB);
+   
+    // Next, add the true and fallthrough blocks as its successors.
+    BB->addSuccessor(Copy0MBB);
+    BB->addSuccessor(Copy1MBB);
+    
+    // Insert Branch CC instruction
+    BuildMI(BB, DL, TII.get(FISC::Bcc))
+        .addOperand(MI->getOperand(3))
+        .addMBB(Copy1MBB);
+
+    // Copy0MBB:
+    //  %FalseValue = ...
+    //  # fallthrough to Copy1MBB
+    BB = Copy0MBB;
+
+    // Update machine-CFG edges
+    BB->addSuccessor(Copy1MBB);
+
+    // Copy1MBB:
+    //  %Result = phi [ %FalseValue, Copy0MBB ], [ %TrueValue, ThisMBB ]
+    // ...
+    BB = Copy1MBB;
+    BuildMI(*BB, BB->begin(), DL, TII.get(FISC::PHI),
+        MI->getOperand(0).getReg())
+        .addReg(MI->getOperand(2).getReg()).addMBB(Copy0MBB)
+        .addReg(MI->getOperand(1).getReg()).addMBB(ThisMBB);
+
+    MI->eraseFromParent(); // The pseudo instruction is gone now.
+    return BB;
 }
 
 //===----------------------------------------------------------------------===//

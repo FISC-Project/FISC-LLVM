@@ -149,11 +149,7 @@ void FISCAsmBackend::applyFixup(const MCFixup &Fixup, char *Data,
 {
     unsigned NumBytes = 4;
 
-    printf("\n\nFIXUP: %d VALUE: %d ", Fixup.getKind(), Value);
-
     Value = adjustFixupValue(Fixup, Value);
-
-    printf("AFTER: %d\n\n", Value);
 
     if (!Value)
         return; /// Doesn't change encoding.

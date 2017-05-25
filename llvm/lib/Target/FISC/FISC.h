@@ -20,6 +20,18 @@
 
 namespace llvm {
 
+namespace FISC {
+enum CondCodes {
+	COND_EQ = 1, // Equal (==)
+	COND_NE = 2, // Not equal (!=)
+	COND_LT = 3, // Lower (<)
+	COND_LE = 4, // Lower or equal (<=)
+	COND_GT = 5, // Greater (>)
+	COND_GE = 6, // Greater or equal (>=)
+	COND_INVAL = -1
+};
+}
+
 class TargetMachine;
 class FISCTargetMachine;
 

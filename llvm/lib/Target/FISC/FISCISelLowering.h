@@ -34,7 +34,9 @@ enum NodeType {
     LOAD_SYM,
     /// This loads a 64-bit immediate into a register.
     MOVEi64,
-    CALL
+    SELECT_CC,
+    CALL,
+    CMP
 };
 }
 
@@ -51,6 +53,8 @@ public:
     /// getTargetNodeName - This method returns the name of a target specific DAG node.
     virtual const char *getTargetNodeName(unsigned Opcode) const override;
 
+    MachineBasicBlock *EmitInstrWithCustomInserter(MachineInstr *MI, MachineBasicBlock *BB) const override;
+    
 private:
     const FISCSubtarget &Subtarget;
 
@@ -81,6 +85,9 @@ private:
 
     /// LowerGlobalAddress - Emit a constant load to the global address.
     SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
+
+    /// LowerSelectCC - Lower a ternary if instruction
+    SDValue LowerSelectCC(SDValue Op, SelectionDAG &DAG) const;
 };
 } // end namespace llvm
 

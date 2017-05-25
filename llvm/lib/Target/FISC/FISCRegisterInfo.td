@@ -50,6 +50,8 @@ def FP  : FISCReg<29, "fp">;
 def LR  : FISCReg<30, "lr">;
 def XZR : FISCReg<31, "xzr">;
 
+def CPSR : FISCReg<36, "cpsr">;
+
 // Register classes
 def GRRegs : RegisterClass<"FISC", [i64], 64,
     // Return values and arguments
