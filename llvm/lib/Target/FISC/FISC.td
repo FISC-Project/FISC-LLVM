@@ -36,10 +36,15 @@ class Proc<string Name, list<SubtargetFeature> Features>
 
 def : Proc<"generic", []>;
 
+def FISCAsmParser : AsmParser {
+    let ShouldEmitMatchRegisterName = 0;
+}
+
 //===----------------------------------------------------------------------===//
 // Declare the target which we are implementing
 //===----------------------------------------------------------------------===//
 
 def FISC : Target {
-    let InstructionSet = FISCInstrInfo;
+    let InstructionSet  = FISCInstrInfo;
+    let AssemblyParsers = [FISCAsmParser];
 }

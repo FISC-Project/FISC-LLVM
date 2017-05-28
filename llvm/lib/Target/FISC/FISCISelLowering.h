@@ -88,6 +88,35 @@ private:
 
     /// LowerSelectCC - Lower a ternary if instruction
     SDValue LowerSelectCC(SDValue Op, SelectionDAG &DAG) const;
+
+    // Inline asm support
+    ConstraintType getConstraintType(StringRef Constraint) const override;
+
+    /// Examine constraint string and operand type and determine a weight value.
+    /// The operand object must already have been set up with the operand type.
+    ConstraintWeight getSingleConstraintMatchWeight(
+      AsmOperandInfo &info, const char *constraint) const override;
+
+    /// This function parses registers that appear in inline-asm constraints.
+    /// It returns pair (0, 0) on failure.
+    std::pair<unsigned, const TargetRegisterClass *>
+    parseRegForInlineAsmConstraint(const StringRef &C, MVT VT) const;
+
+    std::pair<unsigned, const TargetRegisterClass *>
+    getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
+                                 StringRef Constraint, MVT VT) const override;
+
+    /// LowerAsmOperandForConstraint - Lower the specified operand into the Ops
+    /// vector.  If it is invalid, don't add anything to Ops. If hasMemory is
+    /// true it means one of the asm constraint of the inline asm instruction
+    /// being processed is 'm'.
+    void LowerAsmOperandForConstraint(SDValue Op,
+                                      std::string &Constraint,
+                                      std::vector<SDValue> &Ops,
+                                      SelectionDAG &DAG) const override;
+
+    bool isLegalAddressingMode(const DataLayout &DL, const AddrMode &AM,
+                               Type *Ty, unsigned AS) const override;
 };
 } // end namespace llvm
 

@@ -103,10 +103,16 @@ def cc_val : Operand<i64> {
     let PrintMethod = "printCondCode";
 }
 
+def FISCMemAsmOperand : AsmOperandClass {
+    let Name = "Mem";
+    let ParserMethod = "parseMemOperand";
+}
+
 def memsrc : Operand<i64> {
-    let MIOperandInfo = (ops GRRegs, i64imm);
-    let PrintMethod   = "printAddrModeMemSrc";
-    let EncoderMethod = "getMemSrcValue";
+    let MIOperandInfo    = (ops GRRegs, i64imm);
+    let PrintMethod      = "printAddrModeMemSrc";
+    let EncoderMethod    = "getMemSrcValue";
+    let ParserMatchClass = FISCMemAsmOperand;
 }
 
 //===----------------------------------------------------------------------===//

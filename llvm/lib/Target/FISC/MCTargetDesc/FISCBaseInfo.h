@@ -58,9 +58,15 @@ namespace FISCII {
         /// Flag for 9 bit addresses
         MO_9BIT = 0x40,
 
+        /// Flag for 6 bit shamt values
+        MO_6BIT = 0x80,
+
+        /// Flag for 12 bit immediate values
+        MO_12BIT = 0x100,
+
         /// MO_OPTION_MASK - Most flags are mutually exclusive; this mask selects
         /// just that part of the flag set.
-        MO_OPTION_MASK = 0x7f,
+        MO_OPTION_MASK = 0x1ff,
 
         /// It's undefined behaviour if an enum overflows the range between its
         /// smallest and largest values, but since these are |ed together, it can

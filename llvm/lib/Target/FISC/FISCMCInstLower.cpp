@@ -92,6 +92,12 @@ MCOperand FISCMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
     case FISCII::MO_9BIT:
         Kind = MCSymbolRefExpr::VK_FISC_9BIT;
         break;
+    case FISCII::MO_6BIT:
+        Kind = MCSymbolRefExpr::VK_FISC_6BIT;
+        break;
+    case FISCII::MO_12BIT:
+        Kind = MCSymbolRefExpr::VK_FISC_12BIT;
+        break;
     }
 
     const MCSymbolRefExpr *MCSym = MCSymbolRefExpr::create(Symbol, Kind, *Ctx);

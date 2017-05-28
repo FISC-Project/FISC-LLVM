@@ -60,6 +60,8 @@ public:
             { "fixup_fisc_call26_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
             { "fixup_fisc_call19_pcrel", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
             { "fixup_fisc_9bit_address", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
+            { "fixup_fisc_6bit_shamt",   0, 64, MCFixupKindInfo::FKF_IsPCRel },
+            { "fixup_fisc_12bit_imm",    0, 64, MCFixupKindInfo::FKF_IsPCRel },
         };
 
         if (Kind < FirstTargetFixupKind)
@@ -124,6 +126,10 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value, MCContext
         return (Value & 0x7FFFF) << 5;
     case FISC::fixup_fisc_9bit_address:
         return (Value & 0x1FF) << 12;
+    case FISC::fixup_fisc_6bit_shamt:
+        return (Value & 0x3F) << 10;
+    case FISC::fixup_fisc_12bit_imm:
+        return (Value & 0xFFF) << 12;
     }
     return Value;
 }

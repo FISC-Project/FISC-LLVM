@@ -17,6 +17,9 @@
 #include "FISCInstPrinter.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/CodeGen/ISDOpcodes.h"
+#include "llvm/CodeGen/AsmPrinter.h"
+#include "llvm/CodeGen/MachineBasicBlock.h"
+#include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCInstrInfo.h"
@@ -59,14 +62,22 @@ static void printExpr(const MCExpr *Expr, raw_ostream &OS) {
     }
 
     const MCSymbolRefExpr::VariantKind Kind = SRE->getKind();
-    assert(Kind == MCSymbolRefExpr::VK_None    ||
-           Kind == MCSymbolRefExpr::VK_FISC_Q1 ||
-           Kind == MCSymbolRefExpr::VK_FISC_Q2 ||
-           Kind == MCSymbolRefExpr::VK_FISC_Q3 || 
-           Kind == MCSymbolRefExpr::VK_FISC_Q4 ||
-           Kind == MCSymbolRefExpr::VK_FISC_CALL26 ||
-           Kind == MCSymbolRefExpr::VK_FISC_CALL19 ||
-           Kind == MCSymbolRefExpr::VK_FISC_9BIT);
+    switch (Kind) {
+        case MCSymbolRefExpr::VK_None: break;
+        case MCSymbolRefExpr::VK_FISC_Q1: OS << "%mov_q1("; break;
+        case MCSymbolRefExpr::VK_FISC_Q2: OS << "%mov_q2("; break;
+        case MCSymbolRefExpr::VK_FISC_Q3: OS << "%mov_q3("; break;
+        case MCSymbolRefExpr::VK_FISC_Q4: OS << "%mov_q4("; break;
+        case MCSymbolRefExpr::VK_FISC_CALL26: OS << "%call26("; break;
+        case MCSymbolRefExpr::VK_FISC_CALL19: OS << "%call19("; break;
+        case MCSymbolRefExpr::VK_FISC_9BIT: OS << "%ldst9("; break;
+        case MCSymbolRefExpr::VK_FISC_6BIT: OS << "%shmt6("; break;
+        case MCSymbolRefExpr::VK_FISC_12BIT: OS << "%imm12("; break;
+        default: {
+            std::string msg = "Instprinter: invalid kind! (" + std::to_string(Kind) + ")";
+            llvm_unreachable(msg.c_str());
+        }
+    }
 
     OS << SRE->getSymbol();
 
@@ -75,6 +86,9 @@ static void printExpr(const MCExpr *Expr, raw_ostream &OS) {
             OS << '+';
         OS << FISC_ez_int2hex(Offset);
     }
+
+    if(Kind)
+        OS << ")";
 }
 
 const char * FISC_condCodeToString(ISD::CondCode CC) {

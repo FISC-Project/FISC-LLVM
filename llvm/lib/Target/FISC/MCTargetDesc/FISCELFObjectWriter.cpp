@@ -34,7 +34,7 @@ namespace {
 
 unsigned FISCELFObjectWriter::GetRelocType(const MCValue &Target, const MCFixup &Fixup, bool IsPCRel) const {
     if (!IsPCRel)
-        llvm_unreachable("Only dealying with PC-relative fixups for now");
+        llvm_unreachable("Only dealing with PC-relative fixups for now");
 
     unsigned Type = 0;
     switch ((unsigned)Fixup.getKind()) {
@@ -59,7 +59,13 @@ unsigned FISCELFObjectWriter::GetRelocType(const MCValue &Target, const MCFixup 
         Type = ELF::R_FISC_CALL19;
         break;
     case FISC::fixup_fisc_9bit_address:
-        Type = ELF::R_FISC_9;
+        Type = ELF::R_FISC_9_ADDRESS;
+        break;
+    case FISC::fixup_fisc_6bit_shamt:
+        Type = ELF::R_FISC_6_SHAMT;
+        break;
+    case FISC::fixup_fisc_12bit_imm:
+        Type = ELF::R_FISC_12_IMM;
         break;
     }
     return Type;
@@ -72,5 +78,5 @@ FISCELFObjectWriter::~FISCELFObjectWriter() {}
 
 MCObjectWriter *llvm::createFISCELFObjectWriter(raw_pwrite_stream &OS, uint8_t OSABI) {
     MCELFObjectTargetWriter *MOTW = new FISCELFObjectWriter(OSABI);
-    return createELFObjectWriter(MOTW, OS, /*IsLittleEndian=*/false);
+    return createELFObjectWriter(MOTW, OS, /*IsLittleEndian=*/ false);
 }

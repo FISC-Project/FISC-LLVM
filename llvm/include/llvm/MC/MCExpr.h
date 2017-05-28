@@ -281,6 +281,7 @@ public:
 	VK_LEG_LO,
 	VK_LEG_HI,
 
+	VK_FISC_NONE,
 	VK_FISC_Q1,
 	VK_FISC_Q2,
 	VK_FISC_Q3,
@@ -288,7 +289,9 @@ public:
 	VK_FISC_CALL26,
 	VK_FISC_CALL19,
 	VK_FISC_9BIT,
-
+	VK_FISC_6BIT,
+	VK_FISC_12BIT,
+	
 	VK_COFF_IMGREL32, // symbol@imgrel (image-relative)
 
 	VK_Hexagon_PCREL,

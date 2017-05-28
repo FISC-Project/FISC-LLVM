@@ -11,7 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define DEBUG_TYPE "fisc - mc code emitter"
+#define DEBUG_TYPE "fisc - mccodeemitter"
 
 #include "MCTargetDesc/FISCMCTargetDesc.h"
 #include "MCTargetDesc/FISCFixupKinds.h"
@@ -113,13 +113,21 @@ unsigned FISCMCCodeEmitter::getMachineOpValue(const MCInst &MI,
         Kind = Expr->getKind();
     }
 
+    if (Kind == MCExpr::Constant)
+        return cast<MCConstantExpr>(Expr)->getValue();
+
     assert (Kind == MCExpr::SymbolRef);
 
     unsigned FixupKind;
-    
-    switch (cast<MCSymbolRefExpr>(Expr)->getKind()) {
-    default:
-        llvm_unreachable("Unknown fixup kind!");
+    unsigned VKind = cast<MCSymbolRefExpr>(Expr)->getKind();
+
+    switch (VKind) {
+    case MCSymbolRefExpr::VK_None:
+        return 0;
+    default: {
+        std::string msg = "Unknown fixup kind! (" + std::to_string(VKind) + ")";
+        llvm_unreachable(msg.c_str());
+    }
     case MCSymbolRefExpr::VK_FISC_Q1:
         FixupKind = FISC::fixup_fisc_mov_q1_pcrel;
         break;
@@ -140,6 +148,12 @@ unsigned FISCMCCodeEmitter::getMachineOpValue(const MCInst &MI,
         break;
     case MCSymbolRefExpr::VK_FISC_9BIT:
         FixupKind = FISC::fixup_fisc_9bit_address;
+        break;
+    case MCSymbolRefExpr::VK_FISC_6BIT:
+        FixupKind = FISC::fixup_fisc_6bit_shamt;
+        break;
+    case MCSymbolRefExpr::VK_FISC_12BIT:
+        FixupKind = FISC::fixup_fisc_12bit_imm;
         break;
     }
 

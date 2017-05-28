@@ -65,9 +65,9 @@ multiclass ShiftOp<bits<11> opcode, string opstr, SDNode opnode>
 }
 
 defm ADD  : BinOp<0b10001011000, 0b1001000100, "add",  "addi",  add>;
-defm ADDS : BinOp<0b10101011000, 0b1011000100, "adds", "addis", add>;
+defm ADDS : BinOp<0b10101011000, 0b1011000100, "adds", "addis", add>; // FIXME: There's a Node conflict between this add and the prev. line's add
 defm SUB  : BinOp<0b11001011000, 0b1101000100, "sub",  "subi",  sub>;
-defm SUBS : BinOp<0b10101011000, 0b1011000100, "subs", "subis", sub>;
+defm SUBS : BinOp<0b10101011000, 0b1011000100, "subs", "subis", sub>; // FIXME: There's a Node conflict between this sub and the prev. line's sub
 defm AND  : BinOp<0b10001010000, 0b1001001000, "and",  "andi",  and>;
 defm ANDS : BinOp<0b11101010000, 0b1111001000, "ands", "andis", and>;
 defm EOR  : BinOp<0b11001010000, 0b1101001000, "eor",  "eori",  xor>;
