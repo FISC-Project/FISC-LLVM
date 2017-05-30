@@ -36,6 +36,7 @@ class TargetMachine;
 class FISCTargetMachine;
 
 FunctionPass *createFISCISelDag(FISCTargetMachine &TM, CodeGenOpt::Level OptLevel);
+FunctionPass *createFISCDelaySlotFillerPass(FISCTargetMachine &TM);
 } // end namespace llvm
 
 #endif

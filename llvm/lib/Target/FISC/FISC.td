@@ -21,6 +21,7 @@ include "llvm/Target/Target.td"
 // Descriptions
 //===----------------------------------------------------------------------===//
 
+include "FISCSchedule.td"
 include "FISCRegisterInfo.td"
 include "FISCInstrInfo.td"
 include "FISCCallingConv.td"
@@ -32,7 +33,7 @@ def FISCInstrInfo : InstrInfo;
 //===----------------------------------------------------------------------===//
 
 class Proc<string Name, list<SubtargetFeature> Features>
-    : Processor<Name, NoItineraries, Features>;
+    : Processor<Name, FISCItineraries, Features>;
 
 def : Proc<"generic", []>;
 

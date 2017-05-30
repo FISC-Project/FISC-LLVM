@@ -59,7 +59,7 @@ TargetPassConfig *FISCTargetMachine::createPassConfig(PassManagerBase &PM) {
 }
 
 bool FISCPassConfig::addPreISel() { 
-    return false; 
+    return false;
 }
 
 bool FISCPassConfig::addInstSelector() {
@@ -68,7 +68,7 @@ bool FISCPassConfig::addInstSelector() {
 }
 
 void FISCPassConfig::addPreEmitPass() {
-
+    addPass(createFISCDelaySlotFillerPass(getFISCTargetMachine()));
 }
 
 /// Force static initialization.

@@ -76,10 +76,23 @@ defm LSL  : ShiftOp<0b11010011011, "lsl", shl>;
 defm LSR  : ShiftOp<0b11010011010, "lsr", srl>;
 
 //===----------------------------------------------------------------------===//
+// No Operation
+//===----------------------------------------------------------------------===//
+
+def NOP : InstFISC<(outs), (ins), "nop", [], IIAlu>
+{
+    let Inst{31-21} = 0b10001011000;
+    let Inst{20-16} = 31;
+    let Inst{15-10} = 0;
+    let Inst{9-5}   = 31;
+    let Inst{4-0}   = 31;
+}
+
+//===----------------------------------------------------------------------===//
 // Multiply Instructions
 //===----------------------------------------------------------------------===//
 
-def MUL  : ALURInst<0b10011011000, (outs GRRegs:$dst),
+def MUL : ALURInst<0b10011011000, (outs GRRegs:$dst),
                    (ins GRRegs:$src1, GRRegs:$src2),
                    "mul $dst, $src1, $src2",
                    [(set i64:$dst, (mul i64:$src1, i64:$src2))]> 
@@ -97,7 +110,7 @@ def MUL  : ALURInst<0b10011011000, (outs GRRegs:$dst),
 // Mov Instructions
 //===----------------------------------------------------------------------===//
 
-def MOVrr  : ALUIInst<0b1001000100, (outs GRRegs:$dst), (ins GRRegs:$src),
+def MOVrr : ALUIInst<0b1001000100, (outs GRRegs:$dst), (ins GRRegs:$src),
                                     "mov $dst, $src",
                                     [/* No pattern */]> 
 {
@@ -130,7 +143,7 @@ def MOVRK : MOV<0b111110101, "movrk",(ins i64imm:$imm, i64imm:$lsl, i64imm:$ign)
 def MOVRZ : MOV<0b110110101, "movrz",(ins i64imm:$imm, i64imm:$lsl)>;
 
 def MOVi64 : InstFISC<(outs GRRegs:$dst), (ins i64imm:$src), "",
-                      [(set i64:$dst, (movei64 imm:$src))]> 
+                      [(set i64:$dst, (movei64 imm:$src))], IIPseudo> 
 {
     let isPseudo      = 1;
     let isCodeGenOnly = 1;
@@ -142,7 +155,7 @@ def MOVi64 : InstFISC<(outs GRRegs:$dst), (ins i64imm:$src), "",
 
 def CMP : InstFISC<(outs), (ins GRRegs:$lhs, GRRegs:$rhs),
                     "cmp $lhs, $rhs", 
-                    [(FISCCmp GRRegs:$lhs, GRRegs:$rhs)]> 
+                    [(FISCCmp GRRegs:$lhs, GRRegs:$rhs)], IICmp> 
 {
     bits<5> lhs;
     bits<5> rhs;
@@ -165,7 +178,7 @@ def : Pat<(FISCCmp GRRegs:$lhs, GRRegs:$rhs),
 class LOAD_TYPE<bits<11> opcode, bits<2> sz, string opstr> 
     : InstFISC<(outs GRRegs:$val), (ins memsrc:$addr),
                !strconcat(opstr, " $val, $addr"),
-               [(set i64:$val, (load addr:$addr))]>
+               [(set i64:$val, (load addr:$addr))], IILoad>
 {
     bits<5>  val;
     bits<14> addr;
@@ -180,7 +193,7 @@ class LOAD_TYPE<bits<11> opcode, bits<2> sz, string opstr>
 class STORE_TYPE<bits<11> opcode, bits<2> sz, string opstr> 
     : InstFISC<(outs), (ins GRRegs:$val, memsrc:$addr),
                !strconcat(opstr, " $val, $addr"),
-               [(store i64:$val, addr:$addr)]>
+               [(store i64:$val, addr:$addr)], IIStore>
 {
     bits<14> addr;
     bits<5>  val;
@@ -223,7 +236,7 @@ def STRXRR : STORE_TYPE<0b10111010001, 0b00, "strxrr">;
 
 let isTerminator = 1, isReturn = 1, isBarrier = 1, Uses = [LR] in
 {
-    def RET : InstFISC<(outs), (ins variable_ops), "br lr",  [(FISCRetFlag)]> 
+    def RET : InstFISC<(outs), (ins variable_ops), "br lr",  [(FISCRetFlag)], IIBranch> 
     {
         let Inst{31-0} = 0b11010110000111100000000000000000;
     }
@@ -252,7 +265,7 @@ def : Pat<(fisc_call i64:$dst), (BL tglobaladdr:$dst)>;
 
 let isTerminator = 1, isBranch = 1, isBarrier = 1 in
 {
-    def B : InstFISC<(outs), (ins b_target:$dst), "b $dst", [(br bb:$dst)]>
+    def B : InstFISC<(outs), (ins b_target:$dst), "b $dst", [(br bb:$dst)], IIBranch>
     {
         bits<26> dst;
         let Inst{31-26} = 0b001010;
@@ -262,7 +275,7 @@ let isTerminator = 1, isBranch = 1, isBarrier = 1 in
 
 let isTerminator = 1, isBranch = 1, Uses = [CPSR] in 
 {
-    def Bcc : InstFISC<(outs), (ins cc_val:$cc, bcc_target:$dst), "b$cc $dst",  []> 
+    def Bcc : InstFISC<(outs), (ins cc_val:$cc, bcc_target:$dst), "b$cc $dst",  [], IIBranch> 
     {
         bits<19> dst;
         bits<5>  cc;
