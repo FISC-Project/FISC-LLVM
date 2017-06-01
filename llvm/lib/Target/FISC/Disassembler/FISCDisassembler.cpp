@@ -135,7 +135,7 @@ static DecodeStatus DecodeMem(MCInst &Inst,
 {
     int Reg = (int)fieldFromInstruction(Insn, 0, 5);
     int Offset = SignExtend32<16>((Insn & 0x1FF000) >> 12);
-    int Base = (int)fieldFromInstruction(Insn, 5, 4);
+    int Base = (int)fieldFromInstruction(Insn, 5, 5);
 
     Inst.addOperand(MCOperand::createReg(CPURegsTable[Reg]));
     Inst.addOperand(MCOperand::createReg(CPURegsTable[Base]));

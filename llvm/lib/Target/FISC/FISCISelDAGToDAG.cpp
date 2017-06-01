@@ -161,6 +161,7 @@ SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
         break;
     case ISD::LOAD: // Let LLVM select the default nodes for these
     case ISD::CopyFromReg:
+    case ISD::Register:
     case ISD::ADD: break;
     default:
         DEBUG(errs() << ">> Opcode: " << Base.getOpcode() << "\n");
@@ -230,7 +231,8 @@ SDNode *FISCDAGToDAGISel::SelectIndexedStore(SDNode *N) {
         break;
     }
     case ISD::LOAD: // Let LLVM select the default nodes for these
-    case ISD::ADD: break;
+    case ISD::ADD:
+    case ISD::Register: break;
     default:
         DEBUG(errs() << ">> Opcode: " << Base.getOpcode() << "\n");
         llvm_unreachable("Unknown base pointer opcode!");

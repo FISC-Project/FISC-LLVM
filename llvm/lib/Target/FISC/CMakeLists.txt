@@ -25,6 +25,7 @@ add_llvm_target(FISCCodeGen
   FISCAsmPrinter.cpp
   FISCMCInstLower.cpp
   FISCDelaySlotFiller.cpp
+  FISCMachineFunctionInfo.cpp
   )
 
 add_subdirectory(AsmParser)

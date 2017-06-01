@@ -1,4 +1,4 @@
-//===-- FISCMachineFuctionInfo.h - FISC machine function info -*- C++ -*-===//
+//=== FISCMachineFunctionInfo.h - FISC machine function info -*- C++ -*-==//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -11,25 +11,44 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef FISCMACHINEFUNCTIONINFO_H
-#define FISCMACHINEFUNCTIONINFO_H
+#ifndef LLVM_LIB_TARGET_FISC_FISCMACHINEFUNCTIONINFO_H
+#define LLVM_LIB_TARGET_FISC_FISCMACHINEFUNCTIONINFO_H
 
-#include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 
 namespace llvm {
 
-// Forward declarations
-class Function;
+	/// FISCMachineFunctionInfo - This class is derived from MachineFunction and
+	/// contains private FISC target-specific information for each MachineFunction.
+	class FISCMachineFunctionInfo : public MachineFunctionInfo {
+		virtual void anchor();
 
-/// FISCFunctionInfo - This class is derived from MachineFunction private
-/// FISC target-specific information for each MachineFunction.
-class FISCFunctionInfo : public MachineFunctionInfo {
-public:
-	FISCFunctionInfo()  {}
-	~FISCFunctionInfo() {}
-};
-} // end namespace llvm
+		/// CalleeSavedFrameSize - Size of the callee-saved register portion of the
+		/// stack frame in bytes.
+		unsigned CalleeSavedFrameSize;
 
-#endif // FISCMACHINEFUNCTIONINFO_H
+		/// ReturnAddrIndex - FrameIndex for return slot.
+		int ReturnAddrIndex;
 
+		/// VarArgsFrameIndex - FrameIndex for start of varargs area.
+		int VarArgsFrameIndex;
+
+	public:
+		FISCMachineFunctionInfo() : CalleeSavedFrameSize(0) {}
+
+		explicit FISCMachineFunctionInfo(MachineFunction &MF)
+			: CalleeSavedFrameSize(0), ReturnAddrIndex(0) {}
+
+		unsigned getCalleeSavedFrameSize() const { return CalleeSavedFrameSize; }
+		void setCalleeSavedFrameSize(unsigned bytes) { CalleeSavedFrameSize = bytes; }
+
+		int getRAIndex() const { return ReturnAddrIndex; }
+		void setRAIndex(int Index) { ReturnAddrIndex = Index; }
+
+		int getVarArgsFrameIndex() const { return VarArgsFrameIndex; }
+		void setVarArgsFrameIndex(int Index) { VarArgsFrameIndex = Index; }
+	};
+
+} // End llvm namespace
+
+#endif

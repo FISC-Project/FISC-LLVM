@@ -92,6 +92,7 @@ void FISCRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     default:
         /// Not supported yet.
         return;
+    case FISC::ADDri:
     case FISC::LDR:  case FISC::LDRB:  case FISC::LDRH:  case FISC::LDRSW:  case FISC::LDRXR:
     case FISC::LDRR: case FISC::LDRBR: case FISC::LDRHR: case FISC::LDRSWR: case FISC::LDRXRR:
     case FISC::STR:  case FISC::STRB:  case FISC::STRH:  case FISC::STRW:   case FISC::STRXR:

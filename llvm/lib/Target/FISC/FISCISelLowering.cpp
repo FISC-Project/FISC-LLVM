@@ -71,6 +71,13 @@ FISCTargetLowering::FISCTargetLowering(FISCTargetMachine &FISCTM)
     setOperationAction(ISD::GlobalAddress, MVT::i64, Custom);
     setOperationAction(ISD::SELECT, MVT::i64, Expand);
     setOperationAction(ISD::SELECT_CC, MVT::i64, Custom);
+
+    // Support va_arg(): variable numbers (not fixed numbers) of arguments 
+    //  (parameters) for function all
+    setOperationAction(ISD::VASTART, MVT::Other, Custom);
+    setOperationAction(ISD::VAARG, MVT::Other, Expand);
+    setOperationAction(ISD::VACOPY, MVT::Other, Expand);
+    setOperationAction(ISD::VAEND, MVT::Other, Expand);
 }
 
 SDValue FISCTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
@@ -81,6 +88,8 @@ SDValue FISCTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const 
         return LowerGlobalAddress(Op, DAG);
     case ISD::SELECT_CC:
         return LowerSelectCC(Op, DAG);
+    case ISD::VASTART:
+        return LowerVASTART(Op, DAG);
     }
 }
 
@@ -98,64 +107,64 @@ static SDValue FISC_EmitCMP(SDValue &LHS, SDValue &RHS, SDValue &TargetCC,
     FISC::CondCodes TCC = FISC::COND_INVAL;
 
     switch (CC) {
-        default:
-            llvm_unreachable("Invalid integer condition!");
-        case ISD::SETEQ: 
-            TCC = FISC::COND_EQ;
-            if(LHS.getOpcode() == ISD::Constant)
-                std::swap(LHS, RHS);
-            break;
-        case ISD::SETNE: 
-            TCC = FISC::COND_NE;
-            if (LHS.getOpcode() == ISD::Constant)
-                std::swap(LHS, RHS);
-            break;
-        case ISD::SETULE: 
-            std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
-        case ISD::SETUGE:
-            if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
-                LHS = RHS;
-                RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-                TCC = FISC::COND_LT;
-                break;
-            }
-            TCC = FISC::COND_GE;
-            break;
-        case ISD::SETUGT: 
-            std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
-        case ISD::SETULT: 
-            if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
-                LHS = RHS;
-                RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-                TCC = FISC::COND_GE;
-                break;
-            }
+    default:
+        llvm_unreachable("Invalid integer condition!");
+    case ISD::SETEQ:
+        TCC = FISC::COND_EQ;
+        if (LHS.getOpcode() == ISD::Constant)
+            std::swap(LHS, RHS);
+        break;
+    case ISD::SETNE:
+        TCC = FISC::COND_NE;
+        if (LHS.getOpcode() == ISD::Constant)
+            std::swap(LHS, RHS);
+        break;
+    case ISD::SETULE:
+        std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
+    case ISD::SETUGE:
+        if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
+            LHS = RHS;
+            RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
             TCC = FISC::COND_LT;
             break;
-        case ISD::SETLE:
-            std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
-        case ISD::SETGE: 
-            if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
-                LHS = RHS;
-                RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-                TCC = FISC::COND_LT;
-                break;
-            }
+        }
+        TCC = FISC::COND_GE;
+        break;
+    case ISD::SETUGT:
+        std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
+    case ISD::SETULT:
+        if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
+            LHS = RHS;
+            RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
             TCC = FISC::COND_GE;
             break;
-        case ISD::SETGT:
-            std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
-        case ISD::SETLT: 
-            if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
-                LHS = RHS;
-                RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
-                TCC = FISC::COND_GE;
-                break;
-            }
+        }
+        TCC = FISC::COND_LT;
+        break;
+    case ISD::SETLE:
+        std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
+    case ISD::SETGE:
+        if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
+            LHS = RHS;
+            RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
             TCC = FISC::COND_LT;
             break;
+        }
+        TCC = FISC::COND_GE;
+        break;
+    case ISD::SETGT:
+        std::swap(LHS, RHS); // INTENTIONAL FALLTHROUGH
+    case ISD::SETLT:
+        if (const ConstantSDNode * C = dyn_cast<ConstantSDNode>(LHS)) {
+            LHS = RHS;
+            RHS = DAG.getConstant(C->getSExtValue() + 1, dl, C->getValueType(0));
+            TCC = FISC::COND_GE;
+            break;
+        }
+        TCC = FISC::COND_LT;
+        break;
     }
-    
+
     TargetCC = DAG.getConstant(TCC, dl, MVT::i64);
     return DAG.getNode(FISCISD::CMP, dl, MVT::Glue, LHS, RHS);
 }
@@ -167,12 +176,12 @@ SDValue FISCTargetLowering::LowerSelectCC(SDValue Op, SelectionDAG &DAG) const {
     SDValue FalseV = Op.getOperand(3);
     ISD::CondCode CC = cast<CondCodeSDNode>(Op.getOperand(4))->get();
     SDLoc dl(Op);
-    
+
     SDValue TargetCC;
     SDValue Flag = FISC_EmitCMP(LHS, RHS, TargetCC, CC, dl, DAG);
 
     SDVTList VTs = DAG.getVTList(Op.getValueType(), MVT::Glue);
-    SDValue Ops[] = {TrueV, FalseV, TargetCC, Flag};
+    SDValue Ops[] = { TrueV, FalseV, TargetCC, Flag };
     return DAG.getNode(FISCISD::SELECT_CC, dl, VTs, Ops);
 }
 
@@ -180,7 +189,7 @@ MachineBasicBlock *FISCTargetLowering::EmitInstrWithCustomInserter(MachineInstr 
     const TargetInstrInfo &TII = *BB->getParent()->getSubtarget().getInstrInfo();
     DebugLoc DL = MI->getDebugLoc();
     assert(MI->getOpcode() == FISC::Select && "Unexpected instr type to insert");
-   
+
     // To "insert" a SELECT instruction, we actually have to insert the diamond
     // control-flow pattern.  The incoming instruction knows the destination vreg
     // to set, the condition code register to branch on, the true/false values to
@@ -207,11 +216,11 @@ MachineBasicBlock *FISCTargetLowering::EmitInstrWithCustomInserter(MachineInstr 
     Copy1MBB->splice(Copy1MBB->begin(), BB,
         std::next(MachineBasicBlock::iterator(MI)), BB->end());
     Copy1MBB->transferSuccessorsAndUpdatePHIs(BB);
-   
+
     // Next, add the true and fallthrough blocks as its successors.
     BB->addSuccessor(Copy0MBB);
     BB->addSuccessor(Copy1MBB);
-    
+
     // Insert Branch CC instruction
     BuildMI(BB, DL, TII.get(FISC::Bcc))
         .addOperand(MI->getOperand(3))
@@ -238,6 +247,18 @@ MachineBasicBlock *FISCTargetLowering::EmitInstrWithCustomInserter(MachineInstr 
     return BB;
 }
 
+SDValue FISCTargetLowering::LowerVASTART(SDValue Op, SelectionDAG& DAG) const {
+    MachineFunction &MF = DAG.getMachineFunction();
+    FISCMachineFunctionInfo *FuncInfo = MF.getInfo<FISCMachineFunctionInfo>();
+
+    SDValue FI = DAG.getFrameIndex(FuncInfo->getVarArgsFrameIndex(), getPointerTy(MF.getDataLayout()));
+
+    // vastart just stores the address of the VarArgsFrameIndex slot into the
+    // memory location argument.
+    const Value *SV = cast<SrcValueSDNode>(Op.getOperand(2))->getValue();
+    return DAG.getStore(Op.getOperand(0), SDLoc(Op), FI, Op.getOperand(1), MachinePointerInfo(SV), false, false, 0);
+}
+
 //===----------------------------------------------------------------------===//
 //                      Calling Convention Implementation
 //===----------------------------------------------------------------------===//
@@ -248,42 +269,148 @@ MachineBasicBlock *FISCTargetLowering::EmitInstrWithCustomInserter(MachineInstr 
 //                  Call Calling Convention Implementation
 //===----------------------------------------------------------------------===//
 
+/// For each argument in a function store the number of pieces it is composed of.
+template<typename ArgT>
+static void ParseFunctionArgs(const SmallVectorImpl<ArgT> &Args, SmallVectorImpl<unsigned> &Out) {
+    unsigned CurrentArgIndex = ~0U;
+    for (unsigned i = 0, e = Args.size(); i != e; i++) {
+        if (CurrentArgIndex == Args[i].OrigArgIndex) {
+            Out.back()++;
+        }
+        else {
+            Out.push_back(1);
+            CurrentArgIndex++;
+        }
+    }
+}
+
+static void AnalyzeVarArgs(CCState &State,
+    const SmallVectorImpl<ISD::OutputArg> &Outs)
+{
+    State.AnalyzeCallOperands(Outs, CC_FISC);
+}
+
+static void AnalyzeVarArgs(CCState &State,
+    const SmallVectorImpl<ISD::InputArg> &Ins) {
+    State.AnalyzeFormalArguments(Ins, CC_FISC);
+}
+
+/// Analyze incoming and outgoing function arguments. We need custom C++ code
+/// to handle special constraints in the ABI like reversing the order of the
+/// pieces of splitted arguments. In addition, all pieces of a certain argument
+/// have to be passed either using registers or the stack but never mixing both.
+template<typename ArgT>
+static void AnalyzeArguments(CCState &State,
+    SmallVectorImpl<CCValAssign> &ArgLocs,
+    const SmallVectorImpl<ArgT> &Args) {
+    static const MCPhysReg RegList[] = {
+        FISC::X19, FISC::X20, FISC::X21, FISC::X22,
+        FISC::X23, FISC::X24, FISC::X25, FISC::X26,
+        FISC::X27
+    };
+
+    static const unsigned NbRegs = array_lengthof(RegList);
+
+    if (State.isVarArg()) {
+        AnalyzeVarArgs(State, Args);
+        return;
+    }
+
+    SmallVector<unsigned, 4> ArgsParts;
+    ParseFunctionArgs(Args, ArgsParts);
+
+    unsigned RegsLeft = NbRegs;
+    bool UseStack = false;
+    unsigned ValNo = 0;
+
+    for (unsigned i = 0, e = ArgsParts.size(); i != e; i++) {
+        MVT ArgVT = Args[ValNo].VT;
+        ISD::ArgFlagsTy ArgFlags = Args[ValNo].Flags;
+        MVT LocVT = ArgVT;
+        CCValAssign::LocInfo LocInfo = CCValAssign::Full;
+
+        // Handle byval arguments
+        if (ArgFlags.isByVal()) {
+            State.HandleByVal(ValNo++, ArgVT, LocVT, LocInfo, 8, 8, ArgFlags);
+            continue;
+        }
+
+        unsigned Parts = ArgsParts[i];
+
+        if (!UseStack && Parts <= RegsLeft) {
+            unsigned FirstVal = ValNo;
+            for (unsigned j = 0; j < Parts; j++) {
+                unsigned Reg = State.AllocateReg(RegList);
+                State.addLoc(CCValAssign::getReg(ValNo++, ArgVT, Reg, LocVT, LocInfo));
+                RegsLeft--;
+            }
+
+            // Reverse the order of the pieces to agree with the "big endian" format
+            // required in the calling convention ABI.
+            SmallVectorImpl<CCValAssign>::iterator B = ArgLocs.begin() + FirstVal;
+            std::reverse(B, B + Parts);
+        }
+        else {
+            UseStack = true;
+            for (unsigned j = 0; j < Parts; j++)
+                CC_FISC(ValNo++, ArgVT, LocVT, LocInfo, ArgFlags, State);
+        }
+    }
+}
+
+static void AnalyzeRetResult(CCState &State,
+    const SmallVectorImpl<ISD::InputArg> &Ins) {
+    State.AnalyzeCallResult(Ins, RetCC_FISC);
+}
+
+static void AnalyzeRetResult(CCState &State,
+    const SmallVectorImpl<ISD::OutputArg> &Outs) {
+    State.AnalyzeReturn(Outs, RetCC_FISC);
+}
+
+template<typename ArgT>
+static void AnalyzeReturnValues(CCState &State,
+    SmallVectorImpl<CCValAssign> &RVLocs,
+    const SmallVectorImpl<ArgT> &Args) {
+    AnalyzeRetResult(State, Args);
+
+    // Reverse splitted return values to get the "big endian" format required
+    // to agree with the calling convention ABI.
+    std::reverse(RVLocs.begin(), RVLocs.end());
+}
+
 /// FISC call implementation
 SDValue FISCTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, SmallVectorImpl<SDValue> &InVals) const {
     /// Fetch data from the CallLoweringInfo class
-    SelectionDAG &DAG                     = CLI.DAG;
-    SDLoc &Loc                            = CLI.DL;
+    SelectionDAG &DAG = CLI.DAG;
+    SDLoc &Loc = CLI.DL;
     SmallVectorImpl<ISD::OutputArg> &Outs = CLI.Outs;
-    SmallVectorImpl<SDValue> &OutVals     = CLI.OutVals;
-    SmallVectorImpl<ISD::InputArg> &Ins   = CLI.Ins;
-    SDValue Chain                         = CLI.Chain;
-    SDValue Callee                        = CLI.Callee;
-    CallingConv::ID CallConv              = CLI.CallConv;
-    const bool isVarArg                   = CLI.IsVarArg;
+    SmallVectorImpl<SDValue> &OutVals = CLI.OutVals;
+    SmallVectorImpl<ISD::InputArg> &Ins = CLI.Ins;
+    SDValue Chain = CLI.Chain;
+    SDValue Callee = CLI.Callee;
+    CallingConv::ID CallConv = CLI.CallConv;
+    const bool isVarArg = CLI.IsVarArg;
 
     CLI.IsTailCall = false;
-
-    if (isVarArg) {
-        llvm_unreachable("Unimplemented");
-    }
-
+    
     /// Analyze operands of the call, assigning locations to each operand.
     SmallVector<CCValAssign, 16> ArgLocs;
     CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs, *DAG.getContext());
-    CCInfo.AnalyzeCallOperands(Outs, CC_FISC);
+    AnalyzeArguments(CCInfo, ArgLocs, Outs);
 
     /// Get the size of the outgoing arguments stack space requirement.
     const unsigned NumBytes = CCInfo.getNextStackOffset();
 
     Chain = DAG.getCALLSEQ_START(Chain, DAG.getIntPtrConstant(NumBytes, Loc, true), Loc);
 
-    SmallVector<std::pair<unsigned, SDValue>, 8> RegsToPass;
-    SmallVector<SDValue, 8>                      MemOpChains;
+    SmallVector<std::pair<unsigned, SDValue>, 9> RegsToPass;
+    SmallVector<SDValue, 12>                     MemOpChains;
 
     /// Walk the register/memloc assignments, inserting copies/loads.
     for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
         CCValAssign &VA = ArgLocs[i];
-        SDValue Arg     = OutVals[i];
+        SDValue Arg = OutVals[i];
 
         // We only handle fully promoted arguments.
         assert(VA.getLocInfo() == CCValAssign::Full && "Unhandled loc info");
@@ -292,11 +419,11 @@ SDValue FISCTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
             RegsToPass.push_back(std::make_pair(VA.getLocReg(), Arg));
             continue;
         }
-
+      
         assert(VA.isMemLoc() && "Only support passing arguments through registers or via the stack");
 
         SDValue StackPtr = DAG.getRegister(FISC::SP, MVT::i64);
-        SDValue PtrOff   = DAG.getIntPtrConstant(VA.getLocMemOffset(), Loc);
+        SDValue PtrOff = DAG.getIntPtrConstant(VA.getLocMemOffset(), Loc);
         PtrOff = DAG.getNode(ISD::ADD, Loc, MVT::i64, StackPtr, PtrOff);
         MemOpChains.push_back(DAG.getStore(Chain, Loc, Arg, PtrOff, MachinePointerInfo(), false, false, 0));
     }
@@ -308,8 +435,8 @@ SDValue FISCTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     /// Build a sequence of copy-to-reg nodes chained together with token chain
     /// and flag operands which copy the outgoing args into the appropriate regs.
     SDValue InFlag;
-    for (auto &Reg : RegsToPass) {
-        Chain  = DAG.getCopyToReg(Chain, Loc, Reg.first, Reg.second, InFlag);
+    for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i) {
+        Chain = DAG.getCopyToReg(Chain, Loc, RegsToPass[i].first, RegsToPass[i].second, InFlag);
         InFlag = Chain.getValue(1);
     }
 
@@ -318,15 +445,17 @@ SDValue FISCTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
     assert(G && "We only support the calling of global addresses");
 
     EVT PtrVT = getPointerTy(DAG.getDataLayout());
-    Callee    = DAG.getGlobalAddress(G->getGlobal(), Loc, PtrVT, 0);
+    Callee = DAG.getGlobalAddress(G->getGlobal(), Loc, PtrVT, 0);
 
     std::vector<SDValue> Ops;
     Ops.push_back(Chain);
     Ops.push_back(Callee);
 
-    /// Add argument registers to the end of the list so that they are known live into the call.
-    for (auto &Reg : RegsToPass)
-        Ops.push_back(DAG.getRegister(Reg.first, Reg.second.getValueType()));
+    // Add argument registers to the end of the list so that they are
+    // known live into the call.
+    for (unsigned i = 0, e = RegsToPass.size(); i != e; ++i)
+        Ops.push_back(DAG.getRegister(RegsToPass[i].first,
+            RegsToPass[i].second.getValueType()));
 
     /// Add a register mask operand representing the call-preserved registers.
     const uint32_t *Mask;
@@ -338,14 +467,14 @@ SDValue FISCTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
 
     if (InFlag.getNode())
         Ops.push_back(InFlag);
-    
+
     SDVTList NodeTys = DAG.getVTList(MVT::Other, MVT::Glue);
 
     /// Returns a chain and a flag for retval copy to use.
-    Chain  = DAG.getNode(FISCISD::CALL, Loc, NodeTys, Ops);
+    Chain = DAG.getNode(FISCISD::CALL, Loc, NodeTys, Ops);
     InFlag = Chain.getValue(1);
-    Chain  = DAG.getCALLSEQ_END(Chain, DAG.getIntPtrConstant(NumBytes, Loc, true),
-                                DAG.getIntPtrConstant(0, Loc, true), InFlag, Loc);
+    Chain = DAG.getCALLSEQ_END(Chain, DAG.getIntPtrConstant(NumBytes, Loc, true),
+        DAG.getIntPtrConstant(0, Loc, true), InFlag, Loc);
     if (!Ins.empty())
         InFlag = Chain.getValue(1);
 
@@ -356,19 +485,18 @@ SDValue FISCTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
 SDValue FISCTargetLowering::LowerCallResult(
     SDValue Chain, SDValue InGlue, CallingConv::ID CallConv, bool isVarArg,
     const SmallVectorImpl<ISD::InputArg> &Ins, SDLoc dl, SelectionDAG &DAG,
-    SmallVectorImpl<SDValue> &InVals) const 
+    SmallVectorImpl<SDValue> &InVals) const
 {
-    assert(!isVarArg && "Unsupported");
-
     /// Assign locations to each value returned by this call.
     SmallVector<CCValAssign, 16> RVLocs;
     CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), RVLocs, *DAG.getContext());
 
-    CCInfo.AnalyzeCallResult(Ins, RetCC_FISC);
+    AnalyzeReturnValues(CCInfo, RVLocs, Ins);
 
-    /// Copy all of the result registers out of their specified physreg.
-    for (auto &Loc : RVLocs) {
-        Chain  = DAG.getCopyFromReg(Chain, dl, Loc.getLocReg(), Loc.getValVT(), InGlue).getValue(1);
+    // Copy all of the result registers out of their specified physreg.
+    for (unsigned i = 0; i != RVLocs.size(); ++i) {
+        Chain = DAG.getCopyFromReg(Chain, dl, RVLocs[i].getLocReg(),
+            RVLocs[i].getValVT(), InGlue).getValue(1);
         InGlue = Chain.getValue(2);
         InVals.push_back(Chain.getValue(0));
     }
@@ -384,47 +512,95 @@ SDValue FISCTargetLowering::LowerCallResult(
 SDValue FISCTargetLowering::LowerFormalArguments(
     SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
     const SmallVectorImpl<ISD::InputArg> &Ins, SDLoc dl, SelectionDAG &DAG,
-    SmallVectorImpl<SDValue> &InVals) const 
+    SmallVectorImpl<SDValue> &InVals) const
 {
-    MachineFunction     &MF      = DAG.getMachineFunction();
+    MachineFunction &MF = DAG.getMachineFunction();
+    MachineFrameInfo *MFI = MF.getFrameInfo();
     MachineRegisterInfo &RegInfo = MF.getRegInfo();
+    FISCMachineFunctionInfo *FuncInfo = MF.getInfo<FISCMachineFunctionInfo>();
 
-    assert(!isVarArg && "VarArg not supported");
-
-    /// Assign locations to all of the incoming arguments.
+    // Assign locations to all of the incoming arguments.
     SmallVector<CCValAssign, 16> ArgLocs;
     CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs, *DAG.getContext());
-    CCInfo.AnalyzeFormalArguments(Ins, CC_FISC);
+    AnalyzeArguments(CCInfo, ArgLocs, Ins);
 
-    for (auto &VA : ArgLocs) {
-        if (VA.isRegLoc()) {
-            /// Arguments passed in registers
-            EVT RegVT = VA.getLocVT();
-            assert(RegVT.getSimpleVT().SimpleTy == MVT::i64 &&
-                    "Only support MVT::i64 register passing");
-
-            const unsigned VReg = RegInfo.createVirtualRegister(&FISC::GRRegsRegClass);
-            RegInfo.addLiveIn(VA.getLocReg(), VReg);
-            
-            SDValue ArgIn = DAG.getCopyFromReg(Chain, dl, VReg, RegVT);
-            InVals.push_back(ArgIn);
-            continue;
-        }
-
-        assert(VA.isMemLoc() && "Can only pass arguments as either registers or via the stack");
-
-        const unsigned Offset = VA.getLocMemOffset();
-
-        /// Create Frame Index node
-        const int FI = MF.getFrameInfo()->CreateFixedObject(8, Offset, true);
-        EVT PtrTy = getPointerTy(DAG.getDataLayout());
-        SDValue FIPtr = DAG.getFrameIndex(FI, PtrTy);
-    
-        assert(VA.getValVT() == MVT::i64 && "Only support passing arguments as i64");
-
-        SDValue Load = DAG.getLoad(VA.getValVT(), dl, Chain, FIPtr, MachinePointerInfo(), false, false, false, 0);
-        InVals.push_back(Load);
+    // Create frame index for the start of the first vararg value
+    if (isVarArg) {
+        unsigned Offset = CCInfo.getNextStackOffset();
+        FuncInfo->setVarArgsFrameIndex(MFI->CreateFixedObject(1, Offset, true));
     }
+
+    for (unsigned i = 0, e = ArgLocs.size(); i != e; ++i) {
+        CCValAssign &VA = ArgLocs[i];
+        if (VA.isRegLoc()) {
+            // Arguments passed in registers
+            EVT RegVT = VA.getLocVT();
+            switch (RegVT.getSimpleVT().SimpleTy) {
+            default:
+            {
+#ifndef NDEBUG
+                errs() << "LowerFormalArguments Unhandled argument type: "
+                    << RegVT.getSimpleVT().SimpleTy << "\n";
+#endif
+                llvm_unreachable(nullptr);
+            }
+            case MVT::i64:
+                unsigned VReg = RegInfo.createVirtualRegister(&FISC::GRRegsRegClass);
+                RegInfo.addLiveIn(VA.getLocReg(), VReg);
+                SDValue ArgValue = DAG.getCopyFromReg(Chain, dl, VReg, RegVT);
+
+                // If this is an 8-bit value, it is really passed promoted to 16
+                // bits. Insert an assert[sz]ext to capture this, then truncate to the
+                // right size.
+                if (VA.getLocInfo() == CCValAssign::SExt)
+                    ArgValue = DAG.getNode(ISD::AssertSext, dl, RegVT, ArgValue,
+                        DAG.getValueType(VA.getValVT()));
+                else if (VA.getLocInfo() == CCValAssign::ZExt)
+                    ArgValue = DAG.getNode(ISD::AssertZext, dl, RegVT, ArgValue,
+                        DAG.getValueType(VA.getValVT()));
+
+                if (VA.getLocInfo() != CCValAssign::Full)
+                    ArgValue = DAG.getNode(ISD::TRUNCATE, dl, VA.getValVT(), ArgValue);
+
+                InVals.push_back(ArgValue);
+            }
+        }
+        else {
+            // Sanity check
+            assert(VA.isMemLoc());
+
+            SDValue InVal;
+            ISD::ArgFlagsTy Flags = Ins[i].Flags;
+
+            if (Flags.isByVal()) {
+                int FI = MFI->CreateFixedObject(Flags.getByValSize(),
+                    VA.getLocMemOffset(), true);
+                InVal = DAG.getFrameIndex(FI, getPointerTy(DAG.getDataLayout()));
+            }
+            else {
+                // Load the argument to a virtual register
+                unsigned ObjSize = VA.getLocVT().getSizeInBits() / 8;
+                if (ObjSize > 8) {
+                    errs() << "LowerFormalArguments Unhandled argument type: "
+                        << EVT(VA.getLocVT()).getEVTString()
+                        << "\n";
+                }
+                // Create the frame index object for this incoming parameter...
+                int FI = MFI->CreateFixedObject(ObjSize, VA.getLocMemOffset(), true);
+
+                // Create the SelectionDAG nodes corresponding to a load
+                //from this parameter
+                SDValue FIN = DAG.getFrameIndex(FI, MVT::i64);
+                InVal = DAG.getLoad(
+                    VA.getLocVT(), dl, Chain, FIN,
+                    MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI),
+                    false, false, false, 0);
+            }
+
+            InVals.push_back(InVal);
+        }
+    }
+
     return Chain;
 }
 
@@ -432,10 +608,10 @@ SDValue FISCTargetLowering::LowerFormalArguments(
 //               Return Value Calling Convention Implementation
 //===----------------------------------------------------------------------===//
 
-bool FISCTargetLowering::CanLowerReturn(CallingConv::ID CallConv, 
-                                        MachineFunction &MF, bool isVarArg,
-                                        const SmallVectorImpl<ISD::OutputArg> &Outs,
-                                        LLVMContext &Context) const 
+bool FISCTargetLowering::CanLowerReturn(CallingConv::ID CallConv,
+    MachineFunction &MF, bool isVarArg,
+    const SmallVectorImpl<ISD::OutputArg> &Outs,
+    LLVMContext &Context) const
 {
     SmallVector<CCValAssign, 16> RVLocs;
     CCState CCInfo(CallConv, isVarArg, MF, RVLocs, Context);
@@ -447,14 +623,11 @@ bool FISCTargetLowering::CanLowerReturn(CallingConv::ID CallConv,
 }
 
 SDValue FISCTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
-                                        bool isVarArg,
-                                        const SmallVectorImpl<ISD::OutputArg> &Outs,
-                                        const SmallVectorImpl<SDValue> &OutVals,
-                                        SDLoc dl, SelectionDAG &DAG) const
+    bool isVarArg,
+    const SmallVectorImpl<ISD::OutputArg> &Outs,
+    const SmallVectorImpl<SDValue> &OutVals,
+    SDLoc dl, SelectionDAG &DAG) const
 {
-    if (isVarArg)
-        report_fatal_error("VarArg not supported");
-
     /// CCValAssign - represent the assignment of the return value to a location
     SmallVector<CCValAssign, 16> RVLocs;
 
@@ -471,7 +644,7 @@ SDValue FISCTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
         assert(VA.isRegLoc() && "Can only return in registers!");
 
         Chain = DAG.getCopyToReg(Chain, dl, VA.getLocReg(), OutVals[i], Flag);
-        Flag  = Chain.getValue(1);
+        Flag = Chain.getValue(1);
         RetOps.push_back(DAG.getRegister(VA.getLocReg(), VA.getLocVT()));
     }
 
@@ -592,7 +765,7 @@ std::pair<unsigned, const TargetRegisterClass *> FISCTargetLowering::getRegForIn
     if (Constraint.size() == 1) {
         switch (Constraint[0]) {
         case 'r':
-            if (VT == MVT::i32 || VT == MVT::i16 || VT == MVT::i8 || VT == MVT::i64)
+            if (VT == MVT::i8 || VT == MVT::i16 || VT == MVT::i32 || VT == MVT::i64)
                 return std::make_pair(0U, &FISC::GRRegsRegClass);
             // This will generate an error message
             return std::make_pair(0u, static_cast<const TargetRegisterClass*>(0));
@@ -614,7 +787,7 @@ std::pair<unsigned, const TargetRegisterClass *> FISCTargetLowering::getRegForIn
 
 /// LowerAsmOperandForConstraint - Lower the specified operand into the Ops
 /// vector.  If it is invalid, don't add anything to Ops.
-void FISCTargetLowering::LowerAsmOperandForConstraint(SDValue Op, std::string &Constraint, std::vector<SDValue>&Ops, SelectionDAG &DAG) const 
+void FISCTargetLowering::LowerAsmOperandForConstraint(SDValue Op, std::string &Constraint, std::vector<SDValue>&Ops, SelectionDAG &DAG) const
 {
     SDLoc DL(Op);
     SDValue Result;
