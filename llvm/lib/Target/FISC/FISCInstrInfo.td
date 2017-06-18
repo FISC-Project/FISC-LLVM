@@ -238,7 +238,7 @@ let isTerminator = 1, isReturn = 1, isBarrier = 1, Uses = [LR] in
 {
     def RET : InstFISC<(outs), (ins variable_ops), "br lr",  [(FISCRetFlag)], IIBranch> 
     {
-        let Inst{31-0} = 0b11010110000111100000000000000000;
+        let Inst{31-0} = 0b11010110000000000000000000011110;
     }
 }
 
