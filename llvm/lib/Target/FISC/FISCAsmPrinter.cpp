@@ -154,6 +154,7 @@ bool FISCAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNu
 
     return false;
 }
+
 void FISCAsmPrinter::printOperand(const MachineInstr *MI, int opNum, raw_ostream &O) {
     const MachineOperand &MO = MI->getOperand(opNum);
     bool closeP = false;

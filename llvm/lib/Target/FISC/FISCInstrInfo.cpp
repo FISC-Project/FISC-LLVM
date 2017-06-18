@@ -200,7 +200,6 @@ bool FISCInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
             MachineBasicBlock &MBB = *MI->getParent();
 
             const unsigned DstReg = MI->getOperand(0).getReg();
-            //FIXME const MachineOperand & QuadrantImm = MI->getOperand(2);
             const bool DstIsDead  = MI->getOperand(0).isDead();
 
             const MachineOperand &MO = MI->getOperand(1);
@@ -221,17 +220,17 @@ bool FISCInstrInfo::expandPostRAPseudo(MachineBasicBlock::iterator MI) const {
 
             if (MO.isImm()) {
                 const uint64_t Imm = MO.getImm();
-                Q1 = Q1.addImm(Imm & 0xffff);
-                Q2 = Q2.addImm((Imm >> 16) & 0xffff);
-                Q3 = Q3.addImm((Imm >> 32) & 0xffff);
-                Q4 = Q4.addImm((Imm >> 48) & 0xffff);
+                Q1 = Q1.addImm(Imm & 0xffff).addImm(0);
+                Q2 = Q2.addImm((Imm >> 16) & 0xffff).addImm(1);
+                Q3 = Q3.addImm((Imm >> 32) & 0xffff).addImm(2);
+                Q4 = Q4.addImm((Imm >> 48) & 0xffff).addImm(3);
             } else {
                 const GlobalValue *GV = MO.getGlobal();
                 const unsigned TF = MO.getTargetFlags();
-                Q1 = Q1.addGlobalAddress(GV, MO.getOffset(), TF | FISCII::MO_Q1);
-                Q2 = Q2.addGlobalAddress(GV, MO.getOffset(), TF | FISCII::MO_Q2);
-                Q3 = Q3.addGlobalAddress(GV, MO.getOffset(), TF | FISCII::MO_Q3);
-                Q4 = Q4.addGlobalAddress(GV, MO.getOffset(), TF | FISCII::MO_Q4);
+                Q1 = Q1.addGlobalAddress(GV, MO.getOffset(), FISCII::MO_Q1).addImm(0);
+                Q2 = Q2.addGlobalAddress(GV, MO.getOffset(), FISCII::MO_Q2).addImm(1);
+                Q3 = Q3.addGlobalAddress(GV, MO.getOffset(), FISCII::MO_Q3).addImm(2);
+                Q4 = Q4.addGlobalAddress(GV, MO.getOffset(), FISCII::MO_Q4).addImm(3);
             }
 
             MBB.erase(MI);

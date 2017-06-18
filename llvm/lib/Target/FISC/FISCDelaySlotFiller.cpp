@@ -34,6 +34,8 @@ using namespace llvm;
 
 STATISTIC(FilledSlots, "Number of delay slots filled");
 
+unsigned int FISCTextSectOffset = 0;
+
 namespace {
 	typedef MachineBasicBlock::iterator Iter;
 	typedef MachineBasicBlock::reverse_iterator ReverseIter;
@@ -49,9 +51,12 @@ namespace {
 
 		bool runOnMachineFunction(MachineFunction &F) override {
 			bool Changed = false;
-			for (MachineFunction::iterator FI = F.begin(), FE = F.end();
-				FI != FE; ++FI)
+			
+			for (MachineFunction::iterator FI = F.begin(), FE = F.end(); FI != FE; ++FI)
+			{
 				Changed |= runOnMachineBasicBlock(*FI);
+				FISCTextSectOffset += FI->size();
+			}
 			return Changed;
 		}
 	private:

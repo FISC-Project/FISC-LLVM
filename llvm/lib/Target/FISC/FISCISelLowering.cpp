@@ -94,9 +94,13 @@ SDValue FISCTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const 
 }
 
 SDValue FISCTargetLowering::LowerGlobalAddress(SDValue Op, SelectionDAG& DAG) const {
-    EVT VT = Op.getValueType();
     GlobalAddressSDNode *GlobalAddr = cast<GlobalAddressSDNode>(Op.getNode());
     return DAG.getTargetGlobalAddress(GlobalAddr->getGlobal(), Op, MVT::i64, 0, FISCII::MO_CALL26);
+    /* FIXME
+    EVT VT = Op.getValueType();
+    SDValue TargetAddr = DAG.getTargetGlobalAddress(GlobalAddr->getGlobal(), Op, MVT::i64, 0, FISCII::MO_CALL26);
+    return DAG.getNode(FISCISD::LOAD_SYM, Op, VT, TargetAddr);
+    */
 }
 
 static SDValue FISC_EmitCMP(SDValue &LHS, SDValue &RHS, SDValue &TargetCC,

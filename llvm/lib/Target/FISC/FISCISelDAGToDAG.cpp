@@ -145,7 +145,7 @@ SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
     }
 
     switch (Base.getOpcode()) {
-    case ISD::TargetGlobalAddress:  {
+    case ISD::TargetGlobalAddress: {
         GlobalAddressSDNode *GA = dyn_cast<GlobalAddressSDNode>(LDNode->getBasePtr());
         const GlobalValue   *GV = GA->getGlobal();
         SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, 0, FISCII::MO_Q1);
@@ -162,7 +162,8 @@ SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
     case ISD::LOAD: // Let LLVM select the default nodes for these
     case ISD::CopyFromReg:
     case ISD::Register:
-    case ISD::ADD: break;
+    case ISD::ADD: 
+    case FISCISD::LOAD_SYM: break;
     default:
         DEBUG(errs() << ">> Opcode: " << Base.getOpcode() << "\n");
         llvm_unreachable("Unknown base pointer opcode!");

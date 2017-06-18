@@ -257,7 +257,7 @@ let isCall = 1, Defs = [LR], Uses = [SP] in
 }
 
 def : Pat<(fisc_call i64:$dst), (BL tglobaladdr:$dst)>;
-//FIXME def : Pattern<(i64 (load_sym tglobaladdr:$addr)), [(MOVi64 $addr)]>;
+def : Pattern<(i64 (load_sym tglobaladdr:$addr)), [(MOVi64 tglobaladdr:$addr)]>;
 
 //===----------------------------------------------------------------------===//
 // Branch Instructions
