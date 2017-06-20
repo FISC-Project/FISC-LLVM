@@ -25,6 +25,7 @@ namespace FISC {
         fixup_fisc_9bit_address,
         fixup_fisc_6bit_shamt,
         fixup_fisc_12bit_imm,
+        fixup_fisc_movrz_pcrel,
 
         /// Marker
         LastTargetFixupKind,

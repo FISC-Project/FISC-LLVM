@@ -155,6 +155,9 @@ unsigned FISCMCCodeEmitter::getMachineOpValue(const MCInst &MI,
     case MCSymbolRefExpr::VK_FISC_12BIT:
         FixupKind = FISC::fixup_fisc_12bit_imm;
         break;
+    case MCSymbolRefExpr::VK_FISC_MOVRZ:
+        FixupKind = FISC::fixup_fisc_movrz_pcrel;
+        break;
     }
 
     Fixups.push_back(MCFixup::create(0, MO.getExpr(), MCFixupKind(FixupKind)));

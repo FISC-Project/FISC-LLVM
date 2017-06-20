@@ -73,6 +73,7 @@ static void printExpr(const MCExpr *Expr, raw_ostream &OS) {
         case MCSymbolRefExpr::VK_FISC_9BIT: OS << "%ldst9("; break;
         case MCSymbolRefExpr::VK_FISC_6BIT: OS << "%shmt6("; break;
         case MCSymbolRefExpr::VK_FISC_12BIT: OS << "%imm12("; break;
+        case MCSymbolRefExpr::VK_FISC_MOVRZ: OS << "%movrel("; break;
         default: {
             std::string msg = "Instprinter: invalid kind! (" + std::to_string(Kind) + ")";
             llvm_unreachable(msg.c_str());

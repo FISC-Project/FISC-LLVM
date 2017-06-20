@@ -34,7 +34,7 @@ using namespace llvm;
 
 STATISTIC(FilledSlots, "Number of delay slots filled");
 
-unsigned int FISCTextSectOffset = 0;
+extern unsigned int FISCTextSectOffset;
 
 namespace {
 	typedef MachineBasicBlock::iterator Iter;

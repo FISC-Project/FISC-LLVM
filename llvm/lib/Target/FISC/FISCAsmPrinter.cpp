@@ -172,6 +172,7 @@ void FISCAsmPrinter::printOperand(const MachineInstr *MI, int opNum, raw_ostream
     case MCSymbolRefExpr::VK_FISC_9BIT: O << "%ldst9("; break;
     case MCSymbolRefExpr::VK_FISC_6BIT: O << "%shmt6("; break;
     case MCSymbolRefExpr::VK_FISC_12BIT: O << "%imm12("; break;
+    case MCSymbolRefExpr::VK_FISC_MOVRZ: O << "%movrel("; break;
     }
 
     switch (MO.getType()) {

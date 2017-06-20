@@ -302,6 +302,7 @@ StringRef MCSymbolRefExpr::getVariantKindName(VariantKind Kind) {
   case VK_FISC_9BIT: return "VK_FISC_9BIT";
   case VK_FISC_6BIT: return "VK_FISC_6BIT";
   case VK_FISC_12BIT: return "VK_FISC_12BIT";
+  case VK_FISC_MOVRZ: return "VK_FISC_MOVRZ";
   case VK_Hexagon_PCREL: return "PCREL";
   case VK_Hexagon_LO16: return "LO16";
   case VK_Hexagon_HI16: return "HI16";
@@ -423,6 +424,7 @@ MCSymbolRefExpr::getVariantKindForName(StringRef Name) {
     .Case("ldst9",  VK_FISC_9BIT)
     .Case("shmt6",  VK_FISC_6BIT)
     .Case("imm12",  VK_FISC_12BIT)
+    .Case("movrel", VK_FISC_MOVRZ)
     .Default(VK_Invalid);
 }
 

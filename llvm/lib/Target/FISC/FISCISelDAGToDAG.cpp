@@ -148,7 +148,7 @@ SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
     case ISD::TargetGlobalAddress: {
         GlobalAddressSDNode *GA = dyn_cast<GlobalAddressSDNode>(LDNode->getBasePtr());
         const GlobalValue   *GV = GA->getGlobal();
-        SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, 0, FISCII::MO_Q1);
+        SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, 0, FISCII::MO_MOVRZ);
         MachineSDNode * Move = CurDAG->getMachineNode(FISC::MOVRZ, N, MVT::i64, TargetGlobalAddr, CurDAG->getTargetConstant(0, N, MVT::i64));
         Base = SDValue(Move, 0);
         break;
@@ -226,7 +226,7 @@ SDNode *FISCDAGToDAGISel::SelectIndexedStore(SDNode *N) {
     case ISD::TargetGlobalAddress: {
         GlobalAddressSDNode *GA = dyn_cast<GlobalAddressSDNode>(Base);
         const GlobalValue   *GV = GA->getGlobal();
-        SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, 0, FISCII::MO_Q1);
+        SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, 0, FISCII::MO_MOVRZ);
         MachineSDNode * Move = CurDAG->getMachineNode(FISC::MOVRZ, N, MVT::i64, TargetGlobalAddr, CurDAG->getTargetConstant(0, N, MVT::i64));
         Base = SDValue(Move, 0);
         break;
@@ -254,7 +254,7 @@ SDNode *FISCDAGToDAGISel::SelectFrameIndex(SDNode *N) {
 SDNode *FISCDAGToDAGISel::SelectTargetGlobalAddressforADD(SDNode * N, SDNode * N_TargetGlobAddr) {
     GlobalAddressSDNode *GA  = dyn_cast<GlobalAddressSDNode>(N_TargetGlobAddr);
     const GlobalValue   *GV  = GA->getGlobal();
-    SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, 0, FISCII::MO_Q1);
+    SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, 0, FISCII::MO_MOVRZ);
     MachineSDNode * Move = CurDAG->getMachineNode(FISC::MOVRZ, N, MVT::i64, TargetGlobalAddr, CurDAG->getTargetConstant(0, N, MVT::i64));
     SDValue op2 = N->getOperand(1);
     unsigned Opcode;

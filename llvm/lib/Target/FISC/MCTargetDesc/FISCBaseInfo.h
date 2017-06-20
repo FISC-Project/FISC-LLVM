@@ -63,6 +63,9 @@ namespace FISCII {
 
         /// Flag for 12 bit immediate values
         MO_12BIT = 0x100,
+        
+        /// Flag used when moving pc-relative 16-bit values into a GP register
+        MO_MOVRZ = 0xF,
 
         /// MO_OPTION_MASK - Most flags are mutually exclusive; this mask selects
         /// just that part of the flag set.

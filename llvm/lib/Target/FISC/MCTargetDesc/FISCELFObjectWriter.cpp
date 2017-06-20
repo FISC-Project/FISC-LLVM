@@ -67,6 +67,9 @@ unsigned FISCELFObjectWriter::GetRelocType(const MCValue &Target, const MCFixup 
     case FISC::fixup_fisc_12bit_imm:
         Type = ELF::R_FISC_12_IMM;
         break;
+    case FISC::fixup_fisc_movrz_pcrel:
+        Type = ELF::R_FISC_MOVRZ;
+        break;
     }
     return Type;
 }

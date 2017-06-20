@@ -385,7 +385,7 @@ static Triple::ArchType parseArch(StringRef ArchName) {
     .Case("spir64", Triple::spir64)
     .StartsWith("kalimba", Triple::kalimba)
     .Case("leg", Triple::leg)
-    .Cases("fisc", "fisceb", "fiscallegrex", Triple::fisc)
+    .Case("fisc", Triple::fisc)
     .Case("shave", Triple::shave)
     .Case("wasm32", Triple::wasm32)
     .Case("wasm64", Triple::wasm64)

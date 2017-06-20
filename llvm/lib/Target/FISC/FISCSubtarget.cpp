@@ -27,7 +27,7 @@ void FISCSubtarget::anchor() {}
 
 FISCSubtarget::FISCSubtarget(const Triple &TT, StringRef CPU, StringRef FS, FISCTargetMachine &TM)
     : FISCGenSubtargetInfo(TT, CPU, FS),
-      DL("E-p:64:64-i1:8:64-i8:8:64-i16:16:64-i32:32:64-f64:64-a:0:64-n64"),
+      DL("E-p:64:64:64-i1:8:64-i8:8:64-i16:16:64-i32:32:64-f64:64-a:0:64-n64"),
       InstrInfo(), TLInfo(TM), TSInfo(), FrameLowering()
 {
     InstrItins = getInstrItineraryForCPU(CPU);

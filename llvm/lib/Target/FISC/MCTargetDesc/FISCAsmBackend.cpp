@@ -34,7 +34,7 @@ namespace {
 class FISCELFObjectWriter : public MCELFObjectTargetWriter {
 public:
     FISCELFObjectWriter(uint8_t OSABI)
-      : MCELFObjectTargetWriter(/*Is64Bit*/ false, OSABI, ELF::EM_FISC, /*HasRelocationAddend*/ false) {}
+      : MCELFObjectTargetWriter(/*Is64Bit*/ true, OSABI, ELF::EM_FISC, /*HasRelocationAddend*/ false) {}
 };
 
 class FISCAsmBackend : public MCAsmBackend {
@@ -62,6 +62,7 @@ public:
             { "fixup_fisc_9bit_address", 0, 64, MCFixupKindInfo::FKF_IsPCRel },
             { "fixup_fisc_6bit_shamt",   0, 64, MCFixupKindInfo::FKF_IsPCRel },
             { "fixup_fisc_12bit_imm",    0, 64, MCFixupKindInfo::FKF_IsPCRel },
+            { "fixup_fisc_movrz_pcrel",  0, 64, MCFixupKindInfo::FKF_IsPCRel },
         };
 
         if (Kind < FirstTargetFixupKind)
@@ -108,6 +109,8 @@ public:
 };
 } // end of anonymous namespace
 
+unsigned int FISCTextSectOffset = 0;
+
 static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value, MCContext *Ctx = NULL) {
     switch ((unsigned)Fixup.getKind()) {
     default:
@@ -130,6 +133,8 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value, MCContext
         return (Value & 0x3F) << 10;
     case FISC::fixup_fisc_12bit_imm:
         return (Value & 0xFFF) << 12;
+    case FISC::fixup_fisc_movrz_pcrel:
+        return ((Value + ((FISCTextSectOffset - 1) * 4)) & 0xFFFF) << 5;
     }
     return Value;
 }
@@ -145,14 +150,14 @@ void FISCAsmBackend::processFixupValue(const MCAssembler &Asm,
     IsResolved = true;
 
     /// At this point we'll ignore the value returned by adjustFixupValue as
-    /// we are only checking if the fixup can be applied correctly.
+    /// we are only checking if the fixup can be applied correctly.	
     (void)adjustFixupValue(Fixup, Value, &Asm.getContext());
 }
 
 void FISCAsmBackend::applyFixup(const MCFixup &Fixup, char *Data,
                                 unsigned DataSize, uint64_t Value,
                                 bool isPCRel) const 
-{
+{   
     unsigned NumBytes = 4;
 
     Value = adjustFixupValue(Fixup, Value);

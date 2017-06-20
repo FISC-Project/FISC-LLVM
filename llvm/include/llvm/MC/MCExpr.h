@@ -291,6 +291,7 @@ public:
 	VK_FISC_9BIT,
 	VK_FISC_6BIT,
 	VK_FISC_12BIT,
+	VK_FISC_MOVRZ,
 	
 	VK_COFF_IMGREL32, // symbol@imgrel (image-relative)
 

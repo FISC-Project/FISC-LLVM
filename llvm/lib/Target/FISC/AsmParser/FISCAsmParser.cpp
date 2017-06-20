@@ -463,6 +463,7 @@ const MCExpr *FISCAsmParser::evaluateRelocExpr(const MCExpr *Expr, StringRef Rel
         .Case("ldst9",  MCSymbolRefExpr::VK_FISC_9BIT)
         .Case("shmt6",  MCSymbolRefExpr::VK_FISC_6BIT)
         .Case("imm12",  MCSymbolRefExpr::VK_FISC_12BIT)
+        .Case("movrel", MCSymbolRefExpr::VK_FISC_MOVRZ)
         .Default(MCSymbolRefExpr::VK_FISC_NONE);
 
     assert(Kind != MCSymbolRefExpr::VK_FISC_NONE);
@@ -767,7 +768,11 @@ FISC::CondCodes FISCAsmParser::parseCondCodeString(StringRef Cond) {
     return CC;
 }
 
+extern unsigned int FISCTextSectOffset;
+
 bool FISCAsmParser::ParseInstruction(ParseInstructionInfo &Info, StringRef Name, SMLoc NameLoc, OperandVector &Operands) {
+    FISCTextSectOffset++;
+
     // Replace ret mnemonic with br
     if (Name == "ret")
         Name = "br";

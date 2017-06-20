@@ -32,8 +32,6 @@ void FISCMCInstLower::Initialize(Mangler *M, MCContext *C) {
     Ctx  = C;
 }
 
-extern unsigned int FISCTextSectOffset;
-
 MCOperand FISCMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
                                               MachineOperandType MOTy,
                                               unsigned Offset) const 
@@ -47,8 +45,6 @@ MCOperand FISCMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
     case MachineOperand::MO_GlobalAddress:
         Symbol = Printer.getSymbol(MO.getGlobal());
         Offset += MO.getOffset();
-        if(MO.getParent()->getOpcode() == FISC::MOVRZ || MO.getParent()->getOpcode() == FISC::MOVRK)
-            Offset += (FISCTextSectOffset * 4);
         break;
     case MachineOperand::MO_BlockAddress:
         Symbol = Printer.GetBlockAddressSymbol(MO.getBlockAddress());
@@ -101,6 +97,9 @@ MCOperand FISCMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
         break;
     case FISCII::MO_12BIT:
         Kind = MCSymbolRefExpr::VK_FISC_12BIT;
+        break;
+    case FISCII::MO_MOVRZ:
+        Kind = MCSymbolRefExpr::VK_FISC_MOVRZ;
         break;
     }
 
