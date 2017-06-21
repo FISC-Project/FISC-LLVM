@@ -286,13 +286,14 @@ SDNode *FISCDAGToDAGISel::SelectConditionalBranch(SDNode *N) {
     /// Generate a predicated branch instruction.
     CondCodeSDNode *CC = cast<CondCodeSDNode>(Cond.getNode());
     uint64_t TargetCCode;
+    
     switch (CC->get()) {
-    case ISD::CondCode::SETEQ: TargetCCode = FISC::COND_EQ; break;
-    case ISD::CondCode::SETNE: TargetCCode = FISC::COND_NE; break;
-    case ISD::CondCode::SETLT: TargetCCode = FISC::COND_LT; break;
-    case ISD::CondCode::SETLE: TargetCCode = FISC::COND_LE; break;
-    case ISD::CondCode::SETGT: TargetCCode = FISC::COND_GT; break;
-    case ISD::CondCode::SETGE: TargetCCode = FISC::COND_GE; break;
+    case ISD::CondCode::SETOEQ: case ISD::CondCode::SETUEQ: case ISD::CondCode::SETEQ: TargetCCode = FISC::COND_EQ; break;
+    case ISD::CondCode::SETONE: case ISD::CondCode::SETUNE: case ISD::CondCode::SETNE: TargetCCode = FISC::COND_NE; break;
+    case ISD::CondCode::SETOLT: case ISD::CondCode::SETULT: case ISD::CondCode::SETLT: TargetCCode = FISC::COND_LT; break;
+    case ISD::CondCode::SETOLE: case ISD::CondCode::SETULE: case ISD::CondCode::SETLE: TargetCCode = FISC::COND_LE; break;
+    case ISD::CondCode::SETOGT: case ISD::CondCode::SETUGT: case ISD::CondCode::SETGT: TargetCCode = FISC::COND_GT; break;
+    case ISD::CondCode::SETOGE: case ISD::CondCode::SETUGE: case ISD::CondCode::SETGE: TargetCCode = FISC::COND_GE; break;
     default:
         llvm_unreachable("Condition code not supported!");
     }
