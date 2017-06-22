@@ -69,15 +69,15 @@ FISCTargetLowering::FISCTargetLowering(FISCTargetMachine &FISCTM)
 
     /// Nodes that require custom lowering
     setOperationAction(ISD::GlobalAddress, MVT::i64, Custom);
-    setOperationAction(ISD::SELECT, MVT::i64, Expand);
-    setOperationAction(ISD::SELECT_CC, MVT::i64, Custom);
+    setOperationAction(ISD::SELECT,        MVT::i64, Expand);
+    setOperationAction(ISD::SELECT_CC,     MVT::i64, Custom);
 
     // Support va_arg(): variable numbers (not fixed numbers) of arguments 
     //  (parameters) for function all
     setOperationAction(ISD::VASTART, MVT::Other, Custom);
-    setOperationAction(ISD::VAARG, MVT::Other,   Expand);
-    setOperationAction(ISD::VACOPY, MVT::Other,  Expand);
-    setOperationAction(ISD::VAEND, MVT::Other,   Expand);
+    setOperationAction(ISD::VAARG,   MVT::Other, Expand);
+    setOperationAction(ISD::VACOPY,  MVT::Other, Expand);
+    setOperationAction(ISD::VAEND,   MVT::Other, Expand);
 
     setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i1,  Expand);
     setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i8,  Expand);
@@ -299,14 +299,13 @@ static void ParseFunctionArgs(const SmallVectorImpl<ArgT> &Args, SmallVectorImpl
     }
 }
 
-static void AnalyzeVarArgs(CCState &State,
-    const SmallVectorImpl<ISD::OutputArg> &Outs)
+static void AnalyzeVarArgs(CCState &State, const SmallVectorImpl<ISD::OutputArg> &Outs)
 {
     State.AnalyzeCallOperands(Outs, CC_FISC);
 }
 
-static void AnalyzeVarArgs(CCState &State,
-    const SmallVectorImpl<ISD::InputArg> &Ins) {
+static void AnalyzeVarArgs(CCState &State, const SmallVectorImpl<ISD::InputArg> &Ins)
+{
     State.AnalyzeFormalArguments(Ins, CC_FISC);
 }
 
@@ -315,9 +314,8 @@ static void AnalyzeVarArgs(CCState &State,
 /// pieces of splitted arguments. In addition, all pieces of a certain argument
 /// have to be passed either using registers or the stack but never mixing both.
 template<typename ArgT>
-static void AnalyzeArguments(CCState &State,
-    SmallVectorImpl<CCValAssign> &ArgLocs,
-    const SmallVectorImpl<ArgT> &Args) {
+static void AnalyzeArguments(CCState &State, SmallVectorImpl<CCValAssign> &ArgLocs, const SmallVectorImpl<ArgT> &Args)
+{
     static const MCPhysReg RegList[] = {
         FISC::X19, FISC::X20, FISC::X21, FISC::X22,
         FISC::X23, FISC::X24, FISC::X25, FISC::X26,
@@ -373,13 +371,13 @@ static void AnalyzeArguments(CCState &State,
     }
 }
 
-static void AnalyzeRetResult(CCState &State,
-    const SmallVectorImpl<ISD::InputArg> &Ins) {
+static void AnalyzeRetResult(CCState &State, const SmallVectorImpl<ISD::InputArg> &Ins)
+{
     State.AnalyzeCallResult(Ins, RetCC_FISC);
 }
 
-static void AnalyzeRetResult(CCState &State,
-    const SmallVectorImpl<ISD::OutputArg> &Outs) {
+static void AnalyzeRetResult(CCState &State, const SmallVectorImpl<ISD::OutputArg> &Outs)
+{
     State.AnalyzeReturn(Outs, RetCC_FISC);
 }
 

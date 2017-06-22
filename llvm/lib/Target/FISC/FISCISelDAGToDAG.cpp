@@ -341,6 +341,18 @@ SDNode *FISCDAGToDAGISel::Select(SDNode *N) {
         return SelectCompare(N);
     case ISD::BR_CC:
         return SelectConditionalBranch(N);
+    case ISD::CopyToReg:
+        if (N->getOperand(2).getOpcode() == ISD::TargetGlobalAddress) {
+            GlobalAddressSDNode *GA = dyn_cast<GlobalAddressSDNode>(N->getOperand(2));
+            SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GA->getGlobal(), SDLoc(N), MVT::i64, GA->getOffset(), FISCII::MO_MOVRZ);
+            MachineSDNode * Move = CurDAG->getMachineNode(FISC::MOVRZ, N, MVT::i64, TargetGlobalAddr, CurDAG->getTargetConstant(0, N, MVT::i64));
+            
+            /* Replace the last operand of CopyToReg from a 
+               TargetGlobalAddress to a MOVRZ that moves the same 
+               TargetGlobalAddress inside a register */
+            CurDAG->ReplaceAllUsesWith(N->getOperand(2), SDValue(Move, 0));
+        }
+        break;
     }
 
     return SelectCode(N);
