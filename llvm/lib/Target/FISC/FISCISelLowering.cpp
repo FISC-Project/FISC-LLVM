@@ -75,9 +75,20 @@ FISCTargetLowering::FISCTargetLowering(FISCTargetMachine &FISCTM)
     // Support va_arg(): variable numbers (not fixed numbers) of arguments 
     //  (parameters) for function all
     setOperationAction(ISD::VASTART, MVT::Other, Custom);
-    setOperationAction(ISD::VAARG, MVT::Other, Expand);
-    setOperationAction(ISD::VACOPY, MVT::Other, Expand);
-    setOperationAction(ISD::VAEND, MVT::Other, Expand);
+    setOperationAction(ISD::VAARG, MVT::Other,   Expand);
+    setOperationAction(ISD::VACOPY, MVT::Other,  Expand);
+    setOperationAction(ISD::VAEND, MVT::Other,   Expand);
+
+    setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i1,  Expand);
+    setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i8,  Expand);
+    setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i16, Expand);
+    setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i32, Expand);
+    setOperationAction(ISD::SIGN_EXTEND_INREG, MVT::i64, Expand);
+
+    setOperationAction(ISD::SRA_PARTS, MVT::i8,  Expand);
+    setOperationAction(ISD::SRA_PARTS, MVT::i16, Expand);
+    setOperationAction(ISD::SRA_PARTS, MVT::i32, Expand);
+    setOperationAction(ISD::SRA_PARTS, MVT::i64, Expand);
 }
 
 SDValue FISCTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
@@ -96,11 +107,11 @@ SDValue FISCTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const 
 SDValue FISCTargetLowering::LowerGlobalAddress(SDValue Op, SelectionDAG& DAG) const {
     GlobalAddressSDNode *GlobalAddr = cast<GlobalAddressSDNode>(Op.getNode());
     return DAG.getTargetGlobalAddress(GlobalAddr->getGlobal(), Op, MVT::i64, GlobalAddr->getOffset(), FISCII::MO_CALL26);
-    /* FIXME
+#if (0) /* FIXME */
     EVT VT = Op.getValueType();
     SDValue TargetAddr = DAG.getTargetGlobalAddress(GlobalAddr->getGlobal(), Op, MVT::i64, 0, FISCII::MO_CALL26);
     return DAG.getNode(FISCISD::LOAD_SYM, Op, VT, TargetAddr);
-    */
+#endif
 }
 
 static SDValue FISC_EmitCMP(SDValue &LHS, SDValue &RHS, SDValue &TargetCC,

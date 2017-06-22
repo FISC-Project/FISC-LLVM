@@ -47,21 +47,19 @@ multiclass BinOp<bits<11> opcode_r, bits<10> opcode_i, string opstr_r, string op
     }
 }
 
-multiclass ShiftOp<bits<11> opcode, string opstr, SDNode opnode> 
+class ShiftOp<bits<11> opcode, string opstr, SDNode opnode>
+    : ALURInst<opcode, (outs GRRegs:$dst),
+                       (ins GRRegs:$src1, i64imm:$imm),
+                       !strconcat(opstr, " $dst, $src1, $imm"),
+                       [(set i64:$dst, (opnode i64:$src1, FISCimm6:$imm))]> 
 {
-    def : ALURInst<opcode, (outs GRRegs:$dst),
-                           (ins GRRegs:$src1, i64imm:$imm),
-                           !strconcat(opstr, " $dst, $src1, $imm"),
-                           [(set i64:$dst, (opnode i64:$src1, FISCimm6:$imm))]> 
-    {
-        bits<5>  dst;
-        bits<5>  src1;
-        bits<6> imm;
-        let Inst{20-16} = 31;
-        let Inst{15-10} = imm;
-        let Inst{9-5}   = src1;
-        let Inst{4-0}   = dst;
-    }
+    bits<5>  dst;
+    bits<5>  src1;
+    bits<6>  imm;
+    let Inst{20-16} = 31;
+    let Inst{15-10} = imm;
+    let Inst{9-5}   = src1;
+    let Inst{4-0}   = dst;
 }
 
 defm ADD  : BinOp<0b10001011000, 0b1001000100, "add",  "addi",  add>;
@@ -72,8 +70,8 @@ defm AND  : BinOp<0b10001010000, 0b1001001000, "and",  "andi",  and>;
 defm ANDS : BinOp<0b11101010000, 0b1111001000, "ands", "andis", and>;
 defm EOR  : BinOp<0b11001010000, 0b1101001000, "eor",  "eori",  xor>;
 defm ORR  : BinOp<0b10101010000, 0b1011001000, "orr",  "orri",  or>;
-defm LSL  : ShiftOp<0b11010011011, "lsl", shl>;
-defm LSR  : ShiftOp<0b11010011010, "lsr", srl>;
+def  LSL  : ShiftOp<0b11010011011, "lsl", shl>;
+def  LSR  : ShiftOp<0b11010011010, "lsr", sra>;
 
 //===----------------------------------------------------------------------===//
 // No Operation
