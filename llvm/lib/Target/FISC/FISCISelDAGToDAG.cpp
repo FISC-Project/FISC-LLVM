@@ -124,9 +124,9 @@ SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
     LoadSDNode *LDNode = cast<LoadSDNode>(N);
     FrameIndexSDNode *FIN =	dyn_cast<FrameIndexSDNode>(N->getOperand(1));
     SDValue Base = LDNode->getBasePtr();
-    SDValue Offset = CurDAG->getTargetConstant(0, LDNode, MVT::i64); /* The offset here is always 0. It will be adjusted on a later pass */
+    SDValue Offset = CurDAG->getTargetConstant(0, LDNode, MVT::i64);
     unsigned Opc;
-    
+
     switch (LDNode->getMemoryVT().getSimpleVT().SimpleTy) {
         case MVT::i8:
             Opc = FISC::LDRB;
@@ -148,7 +148,7 @@ SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
     case ISD::TargetGlobalAddress: {
         GlobalAddressSDNode *GA = dyn_cast<GlobalAddressSDNode>(LDNode->getBasePtr());
         const GlobalValue   *GV = GA->getGlobal();
-        SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, 0, FISCII::MO_MOVRZ);
+        SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, GA->getOffset(), FISCII::MO_MOVRZ);
         MachineSDNode * Move = CurDAG->getMachineNode(FISC::MOVRZ, N, MVT::i64, TargetGlobalAddr, CurDAG->getTargetConstant(0, N, MVT::i64));
         Base = SDValue(Move, 0);
         break;
@@ -169,7 +169,7 @@ SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
         DEBUG(errs() << ">> Opcode: " << Base.getOpcode() << "\n");
         llvm_unreachable("Unknown base pointer opcode!");
     }
-    
+   
     SDValue ops[]  = { Base, Offset, LDNode->getChain() };
     return CurDAG->getMachineNode(Opc, SDLoc(N), MVT::i64, MVT::Other, ops);
 }
@@ -178,7 +178,7 @@ SDNode *FISCDAGToDAGISel::SelectIndexedStore(SDNode *N) {
     StoreSDNode *STNode = cast<StoreSDNode>(N);
     SDValue	Src = STNode->getValue();
     SDValue Base = STNode->getBasePtr();
-    SDValue Offset = CurDAG->getTargetConstant(0, STNode, MVT::i64); /* The offset here is always 0. It will be adjusted on a later pass */
+    SDValue Offset = CurDAG->getTargetConstant(0, STNode, MVT::i64);
     unsigned Opc;
     
     switch (STNode->getMemoryVT().getSimpleVT().SimpleTy) {
@@ -205,6 +205,14 @@ SDNode *FISCDAGToDAGISel::SelectIndexedStore(SDNode *N) {
         /* Source operand is a constant. We must mutate it into a load into a virtual register  */
         Src = ConstantToRegisterExpand(N, Src);
         break;
+    case ISD::TargetGlobalAddress: {
+        GlobalAddressSDNode *GA = dyn_cast<GlobalAddressSDNode>(Src);
+        const GlobalValue   *GV = GA->getGlobal();
+        SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, GA->getOffset(), FISCII::MO_MOVRZ);
+        MachineSDNode * Move = CurDAG->getMachineNode(FISC::MOVRZ, N, MVT::i64, TargetGlobalAddr, CurDAG->getTargetConstant(0, N, MVT::i64));
+        Src = SDValue(Move, 0);
+        break;
+    }
     default:
         /* Src is already set for this case */
         break;
@@ -227,7 +235,7 @@ SDNode *FISCDAGToDAGISel::SelectIndexedStore(SDNode *N) {
     case ISD::TargetGlobalAddress: {
         GlobalAddressSDNode *GA = dyn_cast<GlobalAddressSDNode>(Base);
         const GlobalValue   *GV = GA->getGlobal();
-        SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, 0, FISCII::MO_MOVRZ);
+        SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, GA->getOffset(), FISCII::MO_MOVRZ);
         MachineSDNode * Move = CurDAG->getMachineNode(FISC::MOVRZ, N, MVT::i64, TargetGlobalAddr, CurDAG->getTargetConstant(0, N, MVT::i64));
         Base = SDValue(Move, 0);
         break;
@@ -256,7 +264,7 @@ SDNode *FISCDAGToDAGISel::SelectFrameIndex(SDNode *N) {
 SDNode *FISCDAGToDAGISel::SelectTargetGlobalAddressforADD(SDNode * N, SDNode * N_TargetGlobAddr) {
     GlobalAddressSDNode *GA  = dyn_cast<GlobalAddressSDNode>(N_TargetGlobAddr);
     const GlobalValue   *GV  = GA->getGlobal();
-    SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, 0, FISCII::MO_MOVRZ);
+    SDValue TargetGlobalAddr = CurDAG->getTargetGlobalAddress(GV, SDLoc(N), MVT::i64, GA->getOffset(), FISCII::MO_MOVRZ);
     MachineSDNode * Move = CurDAG->getMachineNode(FISC::MOVRZ, N, MVT::i64, TargetGlobalAddr, CurDAG->getTargetConstant(0, N, MVT::i64));
     SDValue op2 = N->getOperand(1);
     unsigned Opcode;

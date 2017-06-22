@@ -119,4 +119,4 @@ def memsrc : Operand<i64> {
 // Complex Pattern Definitions.
 //===----------------------------------------------------------------------===//
 
-def addr : ComplexPattern<iPTR, 2, "SelectAddr", [], []>;
+def addr : ComplexPattern<i64, 2, "SelectAddr", [], []>;
