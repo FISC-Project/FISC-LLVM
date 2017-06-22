@@ -89,6 +89,11 @@ FISCTargetLowering::FISCTargetLowering(FISCTargetMachine &FISCTM)
     setOperationAction(ISD::SRA_PARTS, MVT::i16, Expand);
     setOperationAction(ISD::SRA_PARTS, MVT::i32, Expand);
     setOperationAction(ISD::SRA_PARTS, MVT::i64, Expand);
+
+    setOperationAction(ISD::SETCC, MVT::i8,  Expand);
+    setOperationAction(ISD::SETCC, MVT::i16, Expand);
+    setOperationAction(ISD::SETCC, MVT::i32, Expand);
+    setOperationAction(ISD::SETCC, MVT::i64, Expand);
 }
 
 SDValue FISCTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
