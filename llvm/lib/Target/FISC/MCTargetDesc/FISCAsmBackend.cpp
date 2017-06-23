@@ -135,6 +135,12 @@ static unsigned adjustFixupValue(const MCFixup &Fixup, uint64_t Value, MCContext
         return (Value & 0xFFF) << 12;
     case FISC::fixup_fisc_movrz_pcrel:
         return ((Value + ((FISCTextSectOffset - 1) * 4)) & 0xFFFF) << 5;
+    case MCFixupKind::FK_Data_2:
+        return Value << 1;
+    case MCFixupKind::FK_Data_4:
+        return Value << 2;
+    case MCFixupKind::FK_Data_8:
+        return Value;
     }
     return Value;
 }

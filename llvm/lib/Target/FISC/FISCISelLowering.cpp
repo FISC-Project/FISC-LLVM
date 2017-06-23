@@ -458,13 +458,12 @@ SDValue FISCTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
         InFlag = Chain.getValue(1);
     }
 
-    /// We only support calling global addresses.
-    GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee);
-    assert(G && "We only support the calling of global addresses");
-
     EVT PtrVT = getPointerTy(DAG.getDataLayout());
-    Callee = DAG.getGlobalAddress(G->getGlobal(), Loc, PtrVT, 0);
 
+    GlobalAddressSDNode *G = dyn_cast<GlobalAddressSDNode>(Callee);
+    if (G)
+        Callee = DAG.getGlobalAddress(G->getGlobal(), Loc, PtrVT, 0);
+    
     std::vector<SDValue> Ops;
     Ops.push_back(Chain);
     Ops.push_back(Callee);

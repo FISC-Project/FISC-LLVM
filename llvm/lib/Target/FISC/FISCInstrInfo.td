@@ -240,6 +240,11 @@ let isTerminator = 1, isReturn = 1, isBarrier = 1, Uses = [LR] in
     }
 }
 
+def LDPC : InstFISC<(outs), (ins), "ldpc", [], IIAlu>
+{
+    let Inst{31-0} = 0b10101000100000000000000000000000;
+}
+
 //===----------------------------------------------------------------------===//
 // Call Instructions
 //===----------------------------------------------------------------------===//
@@ -268,6 +273,16 @@ let isTerminator = 1, isBranch = 1, isBarrier = 1 in
         bits<26> dst;
         let Inst{31-26} = 0b001010;
         let Inst{25-0}  = dst;
+    }
+}
+
+let isCall = 1, Defs = [LR], Uses = [SP] in
+{
+    def BRL : InstFISC<(outs), (ins GRRegs:$dst), "brl $dst", [(brind GRRegs:$dst)], IIBranch>
+    {
+        bits<5> dst;
+        let Inst{31-21} = 0b11010110001;
+        let Inst{4-0}  = dst;
     }
 }
 
