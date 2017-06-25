@@ -232,7 +232,7 @@ def STRXRR : STORE_TYPE<0b10111010001, 0b00, "strxrr">;
 // Return Instructions
 //===----------------------------------------------------------------------===//
 
-let isTerminator = 1, isReturn = 1, isBarrier = 1, Uses = [LR] in
+let isTerminator = 1, isReturn = 1, Uses = [LR] in
 {
     def RET : InstFISC<(outs), (ins variable_ops), "br lr",  [(FISCRetFlag)], IIBranch> 
     {
