@@ -322,11 +322,11 @@ template<typename ArgT>
 static void AnalyzeArguments(CCState &State, SmallVectorImpl<CCValAssign> &ArgLocs, const SmallVectorImpl<ArgT> &Args)
 {
     static const MCPhysReg RegList[] = {
-        FISC::X18, FISC::X20, FISC::X21, FISC::X22,
-        FISC::X23, FISC::X24, FISC::X25, FISC::X26,
-        FISC::X27
+        FISC::X10, FISC::X11, FISC::X12, FISC::X13,
+        FISC::X14, FISC::X15, FISC::X26, FISC::X27,
+        FISC::X18
     };
-
+    
     static const unsigned NbRegs = array_lengthof(RegList);
 
     if (State.isVarArg()) {
