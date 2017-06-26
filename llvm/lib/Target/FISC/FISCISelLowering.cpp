@@ -441,7 +441,7 @@ SDValue FISCTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
         assert(VA.isMemLoc() && "Only support passing arguments through registers or via the stack");
 
         SDValue StackPtr = DAG.getRegister(FISC::SP, MVT::i64);
-        SDValue PtrOff = DAG.getIntPtrConstant(VA.getLocMemOffset(), Loc);
+        SDValue PtrOff = DAG.getIntPtrConstant(VA.getLocMemOffset() + (isVarArg ? 8 : 0), Loc);
         PtrOff = DAG.getNode(ISD::ADD, Loc, MVT::i64, StackPtr, PtrOff);
         MemOpChains.push_back(DAG.getStore(Chain, Loc, Arg, PtrOff, MachinePointerInfo(), false, false, 0));
     }

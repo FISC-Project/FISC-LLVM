@@ -168,7 +168,8 @@ SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
     case ISD::LOAD: /* Let LLVM select the default nodes for these */
     case ISD::CopyFromReg:
     case ISD::Register:
-    case ISD::ADD: 
+    case ISD::ADD:
+    case ISD::AND:
     case ISD::OR:
     case FISCISD::LOAD_SYM: break;
     default:
@@ -258,6 +259,7 @@ SDNode *FISCDAGToDAGISel::SelectIndexedStore(SDNode *N) {
     }
     case ISD::LOAD: // Let LLVM select the default nodes for these
     case ISD::ADD:
+    case ISD::AND:
     case ISD::OR:
     case ISD::Register: break;
     default:
