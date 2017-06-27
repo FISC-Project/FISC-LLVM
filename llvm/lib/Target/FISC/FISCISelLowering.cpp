@@ -329,13 +329,28 @@ static void AnalyzeArguments(CCState &State, SmallVectorImpl<CCValAssign> &ArgLo
     
     static const unsigned NbRegs = array_lengthof(RegList);
 
-    if (State.isVarArg()) {
-        AnalyzeVarArgs(State, Args);
-        return;
-    }
 
     SmallVector<unsigned, 4> ArgsParts;
     ParseFunctionArgs(Args, ArgsParts);
+
+    if (State.isVarArg()) {
+        unsigned ValNo = 0;
+
+        for (unsigned i = 0, e = ArgsParts.size(); i != e; i++) {
+            MVT ArgVT = Args[ValNo].VT;
+            MVT LocVT = ArgVT;
+            CCValAssign::LocInfo LocInfo = CCValAssign::Full;
+            
+            for (unsigned j = 0; j < ArgsParts[i]; j++) {
+                if (i == 0 && j == 0)
+                    State.addLoc(CCValAssign::getCustomMem(ValNo++, ArgVT, State.AllocateStack(8, 8), LocVT, LocInfo));
+                else
+                    State.addLoc(CCValAssign::getCustomMem(ValNo++, ArgVT, State.AllocateStack(8, 8), LocVT, LocInfo));
+            }
+        }
+
+        return;
+    }
 
     unsigned RegsLeft = NbRegs;
     bool UseStack = false;
@@ -419,7 +434,7 @@ SDValue FISCTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
 
     /// Get the size of the outgoing arguments stack space requirement.
     const unsigned NumBytes = CCInfo.getNextStackOffset();
-
+    
     Chain = DAG.getCALLSEQ_START(Chain, DAG.getIntPtrConstant(NumBytes, Loc, true), Loc);
 
     SmallVector<std::pair<unsigned, SDValue>, 9> RegsToPass;
@@ -441,7 +456,7 @@ SDValue FISCTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI, Sma
         assert(VA.isMemLoc() && "Only support passing arguments through registers or via the stack");
 
         SDValue StackPtr = DAG.getRegister(FISC::SP, MVT::i64);
-        SDValue PtrOff = DAG.getIntPtrConstant(VA.getLocMemOffset() + (isVarArg ? 8 : 0), Loc);
+        SDValue PtrOff = DAG.getIntPtrConstant(VA.getLocMemOffset(), Loc);
         PtrOff = DAG.getNode(ISD::ADD, Loc, MVT::i64, StackPtr, PtrOff);
         MemOpChains.push_back(DAG.getStore(Chain, Loc, Arg, PtrOff, MachinePointerInfo(), false, false, 0));
     }
