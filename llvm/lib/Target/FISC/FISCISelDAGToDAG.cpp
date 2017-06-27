@@ -172,9 +172,9 @@ SDNode * FISCDAGToDAGISel::SelectIndexedLoad(SDNode *N) {
     case ISD::AND:
     case ISD::OR:
     case FISCISD::LOAD_SYM: break;
-    default:
-        DEBUG(errs() << ">> Opcode: " << Base.getOpcode() << "\n");
-        llvm_unreachable("Unknown base pointer opcode!");
+   // default:
+    //    DEBUG(errs() << ">> Opcode: " << Base.getOpcode() << "\n");
+    //    llvm_unreachable("Unknown base pointer opcode!");
     }
    
     SDValue ops[]  = { Base, Offset, LDNode->getChain() };
@@ -262,9 +262,9 @@ SDNode *FISCDAGToDAGISel::SelectIndexedStore(SDNode *N) {
     case ISD::AND:
     case ISD::OR:
     case ISD::Register: break;
-    default:
-        DEBUG(errs() << ">> Opcode: " << Base.getOpcode() << "\n");
-        llvm_unreachable("Unknown base pointer opcode!");
+   // default:
+    //    DEBUG(errs() << ">> Opcode: " << Base.getOpcode() << "\n");
+    //    llvm_unreachable("Unknown base pointer opcode!");
     }
 
     /* Build and return Store instruction with the following operands */	

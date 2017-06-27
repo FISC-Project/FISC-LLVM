@@ -28,6 +28,8 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetRegisterInfo.h"
 
+#define DISABLE_STALLS (0)
+
 using namespace llvm;
 
 #define DEBUG_TYPE "fisc - delayslotfiller"
@@ -104,6 +106,9 @@ static bool insertStall(MachineBasicBlock &MBB, Iter I, const FISCInstrInfo *TII
 /// We assume there is only one delay slot per delayed instruction.
 bool Filler::runOnMachineBasicBlock(MachineBasicBlock &MBB) {
 	bool Changed = false;
+
+#if DISABLE_STALLS == 1
+
 	const FISCSubtarget &STI = MBB.getParent()->getSubtarget<FISCSubtarget>();
 	const FISCInstrInfo *TII = STI.getInstrInfo();
 
@@ -115,6 +120,8 @@ bool Filler::runOnMachineBasicBlock(MachineBasicBlock &MBB) {
 			Changed = true;
 		}
 	}
+
+#endif
 
 	return Changed;
 }
