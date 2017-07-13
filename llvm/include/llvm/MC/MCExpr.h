@@ -277,9 +277,6 @@ public:
 	VK_Mips_CALL_LO16,
 	VK_Mips_PCREL_HI16,
 	VK_Mips_PCREL_LO16,
-	
-	VK_LEG_LO,
-	VK_LEG_HI,
 
 	VK_FISC_NONE,
 	VK_FISC_Q1,

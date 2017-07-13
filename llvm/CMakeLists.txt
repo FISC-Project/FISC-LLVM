@@ -216,7 +216,6 @@ set(LLVM_ALL_TARGETS
   SystemZ
   X86
   XCore
-  LEG
   FISC
   )
 

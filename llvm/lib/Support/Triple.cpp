@@ -60,7 +60,6 @@ const char *Triple::getArchTypeName(ArchType Kind) {
   case spir:        return "spir";
   case spir64:      return "spir64";
   case kalimba:     return "kalimba";
-  case leg:         return "leg";
   case fisc:        return "fisc";
   case shave:       return "shave";
   case wasm32:      return "wasm32";
@@ -129,7 +128,6 @@ const char *Triple::getArchTypePrefix(ArchType Kind) {
   case spir64:      return "spir";
   case kalimba:     return "kalimba";
 
-  case leg:         return "leg";
   case shave:       return "shave";
   case wasm32:
   case wasm64:      return "wasm";
@@ -274,7 +272,6 @@ Triple::ArchType Triple::getArchTypeForLLVMName(StringRef Name) {
     .Case("spir", spir)
     .Case("spir64", spir64)
     .Case("kalimba", kalimba)
-    .Case("leg", leg)
     .Case("fisc", fisc)
     .Case("shave", shave)
     .Case("wasm32", wasm32)
@@ -384,7 +381,6 @@ static Triple::ArchType parseArch(StringRef ArchName) {
     .Case("spir", Triple::spir)
     .Case("spir64", Triple::spir64)
     .StartsWith("kalimba", Triple::kalimba)
-    .Case("leg", Triple::leg)
     .Case("fisc", Triple::fisc)
     .Case("shave", Triple::shave)
     .Case("wasm32", Triple::wasm32)
@@ -596,7 +592,6 @@ static Triple::ObjectFormatType getDefaultFormat(const Triple &T) {
   case Triple::wasm64:
   case Triple::xcore:
   case Triple::fisc:
-  case Triple::leg:
     return Triple::ELF;
 
   case Triple::ppc:
@@ -1123,7 +1118,6 @@ static unsigned getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
   case llvm::Triple::hsail:
   case llvm::Triple::spir:
   case llvm::Triple::kalimba:
-  case llvm::Triple::leg:
   case llvm::Triple::shave:
   case llvm::Triple::wasm32:
     return 32;
@@ -1199,7 +1193,6 @@ Triple Triple::get32BitArchVariant() const {
   case Triple::thumbeb:
   case Triple::x86:
   case Triple::xcore:
-  case Triple::leg:
   case Triple::shave:
   case Triple::wasm32:
     // Already 32-bit.
@@ -1233,7 +1226,6 @@ Triple Triple::get64BitArchVariant() const {
   case Triple::r600:
   case Triple::tce:
   case Triple::xcore:
-  case Triple::leg:
   case Triple::sparcel:
   case Triple::shave:
     T.setArch(UnknownArch);
@@ -1292,7 +1284,6 @@ Triple Triple::getBigEndianArchVariant() const {
   case Triple::hsail64:
   case Triple::hsail:
   case Triple::kalimba:
-  case Triple::leg:
   case Triple::le32:
   case Triple::le64:
   case Triple::msp430:
@@ -1368,7 +1359,6 @@ Triple Triple::getLittleEndianArchVariant() const {
   case Triple::hexagon:
   case Triple::hsail64:
   case Triple::hsail:
-  case Triple::leg:
   case Triple::kalimba:
   case Triple::le32:
   case Triple::le64:

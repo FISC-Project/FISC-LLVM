@@ -26,7 +26,6 @@ subdirectories =
  BPF
  CppBackend
  Hexagon
- LEG
  FISC
  MSP430
  NVPTX

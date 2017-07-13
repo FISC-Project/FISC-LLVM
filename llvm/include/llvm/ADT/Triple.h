@@ -85,7 +85,6 @@ public:
     spir,       // SPIR: standard portable IR for OpenCL 32-bit version
     spir64,     // SPIR: standard portable IR for OpenCL 64-bit version
     kalimba,    // Kalimba: generic kalimba
-    leg,        // LEG: leg
     fisc,       // FISC: fisc (newly added)
     shave,      // SHAVE: Movidius vector VLIW processors
     wasm32,     // WebAssembly with 32-bit pointers
