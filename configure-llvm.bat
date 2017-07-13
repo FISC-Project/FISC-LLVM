@@ -12,5 +12,7 @@ cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang -DCMAKE_BUILD_TYPE=R
 
 @cd "%~dp0"
 
-@MKLINK /D "FISC Target" llvm\lib\Target\FISC>nul
-@MKLINK "LLVM Solution.sln" build\LLVM.sln>nul
+if NOT EXIST "FISC Target" (
+	@MKLINK /D "FISC Target" llvm\lib\Target\FISC>nul
+	@MKLINK "LLVM Solution.sln" build\LLVM.sln>nul
+)
