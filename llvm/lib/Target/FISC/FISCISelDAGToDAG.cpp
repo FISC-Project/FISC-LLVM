@@ -54,6 +54,8 @@ private:
     SDNode *SelectConditionalBranch(SDNode *N);
     SDNode *SelectCompare(SDNode *N);
     SDNode *SelectCallFunctionPointer(SDNode *N);
+    SDNode *SelectShifts(SDNode *N);
+    SDNode *SelectMUL(SDNode *N);
 
     bool SelectInlineAsmMemoryOperand(const SDValue &Op,
                                       unsigned ConstraintID,
@@ -356,9 +358,23 @@ SDNode *FISCDAGToDAGISel::SelectCallFunctionPointer(SDNode *N)
     return SelectCode(N);
 }
 
+SDNode *FISCDAGToDAGISel::SelectShifts(SDNode *N)
+{
+    SDValue Src1 = N->getOperand(0);
+    SDValue Src2 = N->getOperand(1);
+    return CurDAG->getMachineNode(FISC::LSR, N, MVT::i64, Src1, Src2);
+}
+
+SDNode *FISCDAGToDAGISel::SelectMUL(SDNode *N)
+{
+    SDValue Op1 = N->getOperand(0);
+    SDValue Op2 = N->getOperand(1);
+    return CurDAG->getMachineNode(FISC::MUL, N, MVT::i64, Op1, Op2);
+}
+
 SDNode *FISCDAGToDAGISel::Select(SDNode *N) {
     DEBUG(errs() << ">>>>>> Selecting Node: "; N->dump(CurDAG); errs() << "\n");
-    
+
     switch (N->getOpcode()) {
     case ISD::LOAD:
         return SelectIndexedLoad(N);
@@ -404,6 +420,10 @@ SDNode *FISCDAGToDAGISel::Select(SDNode *N) {
         }
         break;
     }
+    case ISD::SRL:
+        return SelectShifts(N);
+    case ISD::MULHU: case ISD::MULHS:
+        return SelectMUL(N);
     }
     
     return SelectCode(N);
