@@ -105,6 +105,38 @@ def MUL : ALURInst<0b10011011000, (outs GRRegs:$dst),
 }
 
 //===----------------------------------------------------------------------===//
+// Divide Instructions
+//===----------------------------------------------------------------------===//
+
+def UDIV : ALURInst<0b10011010110, (outs GRRegs:$dst),
+                   (ins GRRegs:$src1, GRRegs:$src2),
+                   "udiv $dst, $src1, $src2",
+                   [(set i64:$dst, (udiv i64:$src1, i64:$src2))]> 
+{
+    bits<5> dst;
+    bits<5> src1;
+    bits<5> src2;
+    let Inst{20-16} = src2;
+    let Inst{15-10} = 0b000011;
+    let Inst{9-5}   = src1;
+    let Inst{4-0}   = dst;
+}
+
+def SDIV : ALURInst<0b10011010110, (outs GRRegs:$dst),
+                   (ins GRRegs:$src1, GRRegs:$src2),
+                   "sdiv $dst, $src1, $src2",
+                   [(set i64:$dst, (sdiv i64:$src1, i64:$src2))]> 
+{
+    bits<5> dst;
+    bits<5> src1;
+    bits<5> src2;
+    let Inst{20-16} = src2;
+    let Inst{15-10} = 0b000010;
+    let Inst{9-5}   = src1;
+    let Inst{4-0}   = dst;
+}
+
+//===----------------------------------------------------------------------===//
 // Mov Instructions
 //===----------------------------------------------------------------------===//
 
