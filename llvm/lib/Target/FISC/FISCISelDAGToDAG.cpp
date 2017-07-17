@@ -360,9 +360,21 @@ SDNode *FISCDAGToDAGISel::SelectCallFunctionPointer(SDNode *N)
 
 SDNode *FISCDAGToDAGISel::SelectShifts(SDNode *N)
 {
+    unsigned Opc = N->getOpcode();
     SDValue Src1 = N->getOperand(0);
     SDValue Src2 = N->getOperand(1);
-    return CurDAG->getMachineNode(FISC::LSR, N, MVT::i64, Src1, Src2);
+
+    if (Src2.getOpcode() == ISD::LOAD)
+        Src2 = SDValue(SelectIndexedLoad(Src2.getNode()), 0);
+
+    if(Opc == ISD::SRL)
+        return CurDAG->getMachineNode(FISC::LSR, N, MVT::i64, Src1, Src2);
+    else if (Opc == ISD::SRA)
+        return CurDAG->getMachineNode(FISC::LSR, N, MVT::i64, Src1, Src2);
+    else if(Opc == ISD::SHL)
+        return CurDAG->getMachineNode(FISC::LSL, N, MVT::i64, Src1, Src2);
+    else
+        return SelectCode(N);
 }
 
 SDNode *FISCDAGToDAGISel::SelectMUL(SDNode *N)
@@ -420,12 +432,12 @@ SDNode *FISCDAGToDAGISel::Select(SDNode *N) {
         }
         break;
     }
-    case ISD::SRL:
+    case ISD::SRL: // TODO: FIXME case ISD::SRA: case ISD::SHL:
         return SelectShifts(N);
     case ISD::MULHU: case ISD::MULHS:
         return SelectMUL(N);
     }
-    
+
     return SelectCode(N);
 }
 
